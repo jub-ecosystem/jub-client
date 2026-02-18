@@ -1,0 +1,30 @@
+services:
+ jub-db:
+  image: mongo:6-jammy
+  ports:
+    - ${JUB_MONGODB_PORT:-27027}:27017
+  volumes:
+    - jub-db:/data/db
+  networks:
+    - jub
+  restart: unless-stopped
+  
+ jub:
+  build:
+    context: .
+    dockerfile: ${JUB_DOCKERFILE:-Dockerfile}
+  image: ${JUB_IMAGE_NAME:-nachocode/jub:api-0.0.1a0}
+  env_file:
+    - .env.dev
+  ports:
+    - 5000:5000
+  networks:
+    - jub
+  command: uvicorn jubapi.server:app --host ${JUB_HOST:-0.0.0.0} --port ${JUB_PORT:-5000} --reload
+  # volumes:
+    # - "/log:/log"
+
+networks:
+  jub:
+volumes:
+  jub-db:
