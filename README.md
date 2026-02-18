@@ -1,5 +1,7 @@
 # Jub-Client : Client for observatory management 
+Jub-Client is the Python-based client for the Jub ecosystem (Prod1E1-C1), designed to streamline the indexing and management of strategic data within the MADTEC-2025-M-478 project.
 
+As a core component of the national data hub, this client allows researchers and developers to programmatically interact with the Jub API to organize information into Catalogs, Observatories, and Products. By following the STORI model, the Jub-Client ensures that data is categorized through spatial, temporal, and interest-based variables, facilitating high-performance search and retrieval.
 
 
 ## Getting started
@@ -272,6 +274,9 @@ Don't forget to give the project a star! Thanks again!
 3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
+
+We welcome contributions from the team! Before you start coding, please read our [Contributing Guidelines](CONTRIBUTING.md) to learn about our development workflow, coding standards, and mandatory license headers.
+
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
