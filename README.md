@@ -1,4 +1,5 @@
-# OCA-Client : Client for observatory management 
+# Jub-Client : Client for observatory management 
+
 
 
 ## Getting started
@@ -19,18 +20,19 @@ class CatalogItem(BaseModel):
     metadata:Dict[str,str]
 ````
 
-An catalog has many items with the ```CatalogItem``` object definition. You can create an new ```Catalog``` using the oca client, we can create a new oca client using the next code:
+An catalog has many items with the ```CatalogItem``` object definition. You can create an new ```Catalog``` using the jub client, we can create a new jub client using the next code:
 ```python
-from oca.client import OCAClient
-oca_client = OCAClient(hostname="localhost",port=5000)
+from jub import JubClient
+jub_client = JubClient(hostname="localhost",port=5000)
 ```
-⚠️ remember to deploy an instance of oca api the step by step guide is [here](https://github.com/muyal-research-group/oca_api)
+⚠️ remember to deploy an instance of jub api the step by step guide is [here](https://github.com/jub-ecosystem/jub-client)
 
 
 Using this instance of ```OCAClient```, we can create a ```Catalog``` object:
 
 ```python
-from oca.client import Catalog,OCAClient
+from jub import JubClient
+from jub.dto import Catalog, CatalogItem
 # Edit the attributes as you need
 catalog = Catalog(
     cid="",
@@ -48,7 +50,7 @@ catalog = Catalog(
     ],
     kind="SOME"
 )
-response = oca_client.create_catalog(
+response = jub_client.create_catalog(
     catalog = catalog
 )
 response.is_ok # => if True the creation was successfully
@@ -75,8 +77,6 @@ class LevelCatalog(BaseModel):
 we can create an ```Observatory``` using the client:
 
 ```python
-import oca.client import OCAClient,Observatory,LevelCatalog
-
 # edit the attribute as you need..
 observatory = Observatory(
     obid        = ""
@@ -92,7 +92,7 @@ observatory = Observatory(
     disabled    = False
 )
 
-oca_client.create_observatory(observatory = observatory)
+jub_client.create_observatory(observatory = observatory)
 ```
 
 ⚠️ The attribute ```disabled``` manage the visibility of the observatory object, you can disabled and this observatory disappers without deleting the object. 
@@ -120,7 +120,7 @@ class Level(BaseModel):
 
 we can create multiples products using the next method:
 ```python
-from oca.client import Product, Level
+from jub.dto import Product, Level
 
 products = [
      Product(
@@ -148,7 +148,7 @@ products = [
             # .....
 ]
 
-response = oca_client.create_products(
+response = jub_client.create_products(
     products = products
 )
 ```
@@ -162,7 +162,7 @@ response = oca_client.create_products(
 
 You only gonna need the next python library:
 ```sh
-pip install -i https://test.pypi.org/simple/ goca==0.0.2
+pip install -i https://test.pypi.org/simple/ jub==0.0.1a0
 ```
 
 and for package managing and distribution install ```Poetry``` [here](https://python-poetry.org/):
@@ -234,12 +234,12 @@ python3 examples/03_create_products.py 0fec85253ba54359b4482cf70e1cf730 sex3fb25
 For development purposes you need to clone this repo:
 
 ```sh
-git clone git@github.com:muyal-research-group/oca-client.git
+git clone git@github.com:jub-ecosystem/jub-client.git
 ```
 
-After you clonning the repo, you must navigate to the ```oca-client``` folder:
+After you clonning the repo, you must navigate to the ```jub-client``` folder:
 ```sh
-cd oca-client
+cd jub-client
 ```
 
 Now you should activating the virtualenv:
@@ -256,28 +256,8 @@ poetry install
 Now you can run the test in the ````tests/``` folder: 
 
 ```sh
-python3 tests/oca_test.sh
+pytest 
 ```
-
-⚠️ Please check the ```oca_file.py``` after run to skip manually some of the tests.
-
-
-## Building and Publishing
-
-When you are done with the features you need to build the project: 
-
-```sh
-poetry build
-```
-
-Then you should execute the next command:
-
-```sh
-poetry publish -r ocatestpypi
-```
-
-:warning: Before publishing you must set up the tokens in the ```~/.config/pypoetry/auth.toml``` path. 
-
 
 
 ## Contributing
