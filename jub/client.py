@@ -15,10 +15,9 @@
 
 import requests as R
 from nanoid import generate as nanoid
-import string
-import os
 from option import Result,Ok,Err
-from jub.dto import *
+from jub.dto import Observatory, Catalog, Product, ProductFilter, LevelCatalog
+from typing import List
 import time as T
 from jub.log import Log 
 import logging
