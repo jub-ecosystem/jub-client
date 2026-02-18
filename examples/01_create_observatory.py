@@ -1,8 +1,8 @@
 import time as T
-from oca.client import OCAClient,Observatory
+from jub.client import JubClient,Observatory
 from uuid import uuid4
 
-oca_client = OCAClient(
+oca_client = JubClient(
     hostname = "localhost",
     port     = 5000
 )

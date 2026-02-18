@@ -1,9 +1,9 @@
 import time as T
 import sys 
-from oca.client import OCAClient,LevelCatalog,Catalog
+from jub.client import JubClient,LevelCatalog,Catalog
 from uuid import uuid4
 
-oca_client = OCAClient(
+oca_client = JubClient(
     hostname = "localhost",
     port     = 5000
 )

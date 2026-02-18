@@ -1,8 +1,8 @@
 import sys 
-from oca.client import OCAClient,LevelCatalog,Product,Level
+from jub.client import JubClient,LevelCatalog,Product,Level
 from uuid import uuid4
 
-oca_client = OCAClient(
+oca_client = JubClient(
     hostname = "localhost",
     port     = 5000
 )
