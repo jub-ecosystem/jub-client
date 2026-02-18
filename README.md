@@ -5,7 +5,20 @@ As a core component of the national data hub, this client allows researchers and
 
 
 ## Getting started
+This section provides a step-by-step guide to set up and use the Jub-Client for managing observatories, catalogs, and products.
 
+
+### Deploy services
+To use the Jub-Client, you first need to deploy the [Jub API](https://github.com/jub-ecosystem/jub-api). You can do this using Docker Compose with the provided `deploy.sh` script. Make sure you have Docker and Docker Compose installed on your machine.
+
+```sh
+# Make the deploy script executable
+chmod +x deploy.sh
+# Run the deploy script
+./deploy.sh
+```
+
+## Create Catalogs, Observatories, and Products
 We must create the ```Catalog``` object before creating a new ```Observatory```:
 
 ```python
@@ -231,6 +244,8 @@ Example:
 python3 examples/03_create_products.py 0fec85253ba54359b4482cf70e1cf730 sex3fb25a076cf021f2
 ```
 
+
+
 ## Development
 
 For development purposes you need to clone this repo:
@@ -239,14 +254,35 @@ For development purposes you need to clone this repo:
 git clone git@github.com:jub-ecosystem/jub-client.git
 ```
 
+⚠️ Before you start, make sure you have an instance of the Jub API running. You can deploy it using Docker Compose with the provided `deploy.sh` script. Follow the instructions in the [Deploy services](#deploy-services) section above to set up the Jub API. 
+
+⚠️ Before running the tests, make sure to set up the environment variables in the `.env.dev` file according to your local configuration. This file contains necessary settings for connecting to the Jub API and configuring logging.
+
+⚠️ Before you start, make sure you have the lastest repo version, you can pull the lastest changes using the next command:
+
+```sh
+git pull <remote> master
+```
+
+The `<remote>` is the name of the main remote repository, usually `origin` if you cloned it directly from GitHub.
+
+
 After you clonning the repo, you must navigate to the ```jub-client``` folder:
 ```sh
 cd jub-client
 ```
 
+Install the dependencies using poetry, if you don't have poetry installed, you can install it using pip:
+
+```sh
+pip install poetry 
+poetry install
+```
+
 Now you should activating the virtualenv:
 
 ```sh
+poetry self add poetry-plugin-shell
 poetry shell
 ```
 
@@ -255,10 +291,10 @@ Then you should install the dependencies:
 poetry install
 ```
 
-Now you can run the test in the ````tests/``` folder: 
+Now you can run the test in the ```tests/``` folder: 
 
 ```sh
-pytest 
+coverage run -m pytest tests/
 ```
 
 
