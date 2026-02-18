@@ -1,23 +1,24 @@
 [tool.poetry]
-name = "goca"
-version = "0.0.2"
+name = "jub"
+version = "0.0.1a0"
 description = ""
 authors = ["Ignacio Castillo <jcastillo@mictlanx.com>"]
 readme = "README.md"
-packages = [{include = "oca"}]
+packages = [{include = "jub"}]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<4"
+python = ">=3.10,<4"
 option = "^2.1.0"
 humanfriendly = "^10.0"
 pydantic = "^2.6.4"
 requests = "^2.31.0"
 nanoid = "^2.0.0"
-mictlanx = "^0.0.160"
+mictlanx = "0.1.0a3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.1.1"
 pandas = "1.4.3"
+coverage = "^7.13.4"
 
 [[tool.poetry.source]]
 name = "test"

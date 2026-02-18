@@ -1,12 +1,26 @@
 
+# Copyright 2026 MADTEC-2025-M-478 Project Team
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import requests as R
 from nanoid import generate as nanoid
 import string
 import os
 from option import Result,Ok,Err
-from oca.dto import *
+from jub.dto import *
 import time as T
-from oca.log import Log 
+from jub.log import Log 
 import logging
 
 log = Log(
@@ -19,7 +33,8 @@ log = Log(
 OBSERVATORY_ID_SIZE = int(os.environ.get("OBSERVATORY_ID_SIZE","12"))
 OBSERVATORY_ID_ALPHABET  = string.ascii_lowercase+string.digits 
 
-class OCAClient(object):
+class JubClient(object):
+    
     def __init__(self,hostname:str, port:int=-1):
         self.base_url = "https://{}".format(hostname) if port == -1 else "http://{}:{}".format(hostname,port)
         self.observatories_url = "{}/observatories".format(self.base_url)
@@ -46,6 +61,7 @@ class OCAClient(object):
             return Ok(obid)
         except Exception as e:
             return Err(e)
+    
     def update_observatory_catalogs(self,obid:str, catalogs:List[LevelCatalog]=[])->Result[str,Exception]:
         try:
             url = "{}/{}".format(self.observatories_url,obid)
@@ -73,6 +89,7 @@ class OCAClient(object):
             ))
         except Exception as e:
             return Err(e)
+    
     def get_observatories(self,skip:int=0,limit:int=10)->Result[List[Observatory],Exception]:
         try:
             url = "{}?skip={}&limit={}".format(self.observatories_url,skip,limit)
@@ -104,6 +121,7 @@ class OCAClient(object):
             return Ok(cid)
         except Exception as e:
             return Err(e)
+    
     def get_catalog(self,cid:str)->Result[Catalog,Exception]:
         try:
             url = "{}/{}".format(self.catalogs_url,cid)
@@ -170,6 +188,7 @@ class OCAClient(object):
             return Ok(True)
         except Exception as e:
             return Err(e)
+    
     def delete_product(self,pid:str)->Result[str,Exception]:
         try:
             url = "{}/{}".format(self.products_url,pid)
