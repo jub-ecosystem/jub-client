@@ -9,13 +9,11 @@ on:
       - "jub/**"
       - "tests/**"
       - "pyproject.toml"
-  
-  
 jobs:  
   build:  
     runs-on: ubuntu-latest  
     env:
-      JUB_LOG_PATH: ${{ github.workspace }}/log
+      JUB_CLIENT_LOG_PATH: ${{ github.workspace }}/log
     strategy:  
       matrix:  
         python-version: ["3.10"]  
@@ -29,7 +27,7 @@ jobs:
         uses: abatilo/actions-poetry@v3
       - name: Prepare log folder
         run: |
-          mkdir -p "${JUB_LOG_PATH}"
+          mkdir -p "${JUB_CLIENT_LOG_PATH}"
       - name: Start OCA Service
         run: |
           chmod +x deploy.sh && ./deploy.sh
@@ -43,8 +41,6 @@ jobs:
 
       - name: Install Dependencies
         run: poetry install --no-interaction
-
-
       - name: Lint with Ruff  
         run: |  
           pip install ruff  
@@ -54,8 +50,6 @@ jobs:
       - name: Test with pytest  
         run: |  
           poetry run coverage run -m pytest  -v -s  
-        env:
-          LOG_PATH: log  
       - name: Generate Coverage Report  
         run: |  
           poetry run coverage report -m

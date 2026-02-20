@@ -29,6 +29,6 @@ body:
       label: Acceptance Criteria
       description: Define when this task is considered done.
       options:
-        - label: Unit tests updated or added
+        - label: Unit tests added
+        - label: Require passing of CI checks (Unit tests, lint/format checks, etc.)
         - label: Documentation updated
-        - label: Code passes lint/format checks
