@@ -1,6 +1,0 @@
-site_name: Jub Client - v.0.1a0
-site_description: Documentation for Jub - Client
-site_author: Jub - Client Team
-site_url: https://jub.tamps.cinvestav.com/jub-client/docs
-theme:
-  name: material

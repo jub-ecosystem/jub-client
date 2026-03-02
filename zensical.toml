@@ -1,0 +1,21 @@
+[project]
+site_name = "Jub Client - v.0.1a0"
+site_url= "https://jub.tamps.cinvestav.com/jub-client/docs"
+site_author = "Jub Team"
+site_description = "Documentation for the Jub Client, a Python library for interacting with the Jub API"
+copyright = "&copy 2026 Jub Team"
+docs_dir = "docs"
+site_dir = "site"
+use_directory_urls = true
+[project.theme]
+variant = "classic"
+
+[[project.theme.palette]] 
+scheme = "default"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+scheme = "slate"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to light mode"
