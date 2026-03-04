@@ -1,4 +1,4 @@
-# API Deployment
+# Deployment
 
 When running `deploy.sh`, two Docker containers are created :
 
