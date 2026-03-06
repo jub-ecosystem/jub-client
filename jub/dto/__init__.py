@@ -17,7 +17,7 @@ from enum import Enum
 import re
 import json as J
 from typing import List,Dict,Optional
-from pydantic import BaseModel,field_validator
+from pydantic import BaseModel, ValidationInfo,field_validator
 
 class KindEnum(str,Enum):
     interest = "INTEREST"
@@ -228,7 +228,7 @@ class InterestFilter(BaseModel):
     inequality: Optional[InequalityFilter] = None
 
     @field_validator('inequality')
-    def check_exclusivity(cls, v, values):
+    def check_exclusivity(cls, v, values : ValidationInfo):
         """
         Validates mutual exclusivity between `value`and `inequality`
 
@@ -245,9 +245,9 @@ class InterestFilter(BaseModel):
                 If both `value` and `inequality` are provided,
                 or if neither is provided.
         """
-        if v and values.get('value'):
+        if v and values.data['value']:
             raise ValueError('Provide either a value or an inequality, not both')
-        if not v and not values.get('value'):
+        if not v and not values.data['value']:
             raise ValueError('Provide at least a value or an inequality')
         return v
     
