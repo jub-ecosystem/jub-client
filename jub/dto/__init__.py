@@ -196,7 +196,7 @@ class InequalityFilter(BaseModel):
     lt: Optional[int] = None
     eq: Optional[int] = None
 
-    @field_validator('*')
+    @field_validator('*',mode="before")
     def empty_str_to_none(cls, v):
         """
         Converts empty strings to None.
