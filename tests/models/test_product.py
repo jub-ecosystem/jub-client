@@ -1,6 +1,6 @@
 
 
-from jub.dto import Level, Product
+from jub.dto import KindEnum, Level, Product
 
 
 def test_verify_default_values():
@@ -23,7 +23,7 @@ def test_mutable_fields():
             index = 1,
             cid = "12345",
             value = "value",
-            kind = "spatial"    
+            kind = KindEnum.spatial    
         )
     )
     p1.tags.extend(["tag1","tag2","tag3"])
