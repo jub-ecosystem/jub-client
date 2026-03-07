@@ -13,10 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from enum import Enum
 import re
 import json as J
 from typing import List,Dict,Optional
-from pydantic import BaseModel,field_validator
+from pydantic import BaseModel, ValidationInfo,field_validator
+
+class KindEnum(str,Enum):
+    interest = "INTEREST"
+    temporal = "TEMPORAL"
+    spatial = "SPATIAL"
 
 class LevelCatalog(BaseModel):
     """
@@ -25,6 +31,7 @@ class LevelCatalog(BaseModel):
     Attributes:
         level (int):
              The level of the catalog.
+        
         cid (str): 
             Unique identifier of the catalog.
     """
@@ -40,14 +47,19 @@ class Observatory(BaseModel):
     Attributes:
         obid (str): 
             Unique identifier of the observatory.
+        
         title (str):
              Display name used for the observatory.
+        
         image_url (str):
             URL of an image to represent the observatory.
+        
         description (str):
             Textual description providing context.
+        
         catalogs (List[LevelCatalog]): 
             Collection of instances from the LevelCatalog model that references the catalogs and theirs levels.
+        
         disabled (bool): 
             Indicates whether the observatory is inactive.
     """
@@ -57,7 +69,7 @@ class Observatory(BaseModel):
     description:str=""
     catalogs:List[LevelCatalog]=[]
     disabled:bool = False
-
+    
 class CatalogItem(BaseModel):
     """
     Represents a single entry withing a Catalog.
@@ -65,12 +77,16 @@ class CatalogItem(BaseModel):
     Attributes :
         value (str):
             Value for storage.
+        
         display_name (str):
             A redeable name for the catalog item.
+        
         code (str): 
             An unique code that identifies the catalog item.
+        
         description (str): 
             Textual description providing context.
+        
         metadata (Dict[str,str]): 
             A dictionary that contains extra data to provide context
             about the catalog item.
@@ -89,10 +105,13 @@ class Catalog(BaseModel):
     Attributes :
         cid (str): 
             Unique identifier of the catalog.
+        
         display_name (str): 
             Human-readable name of the catalog.
+        
         items (str): 
             Collection of items that belong to this catalog.
+        
         kind (str): 
             Type of the catalog (e.g. 'TEMPORAL','SPATIAL','INTEREST')
     
@@ -103,7 +122,7 @@ class Catalog(BaseModel):
     cid:str = ""
     display_name:str = ""
     items: List[CatalogItem] = []
-    kind:str = ""
+    kind: KindEnum = KindEnum.interest
     @field_validator("display_name")
     def remove_double_spaces(cls,value):
         """
@@ -163,10 +182,13 @@ class InequalityFilter(BaseModel):
     Helps to filter the products by comparison operations
 
     Attributes:
+        
         gt (int | None):
             Represents a 'greater than' comparison.
+        
         lt (int | None):
             Represents a 'less than' comparison.
+        
         eq (int | None):
             Represents a 'equal to' comparison.
     """
@@ -174,7 +196,7 @@ class InequalityFilter(BaseModel):
     lt: Optional[int] = None
     eq: Optional[int] = None
 
-    @field_validator('*')
+    @field_validator('*',mode="before")
     def empty_str_to_none(cls, v):
         """
         Converts empty strings to None.
@@ -182,6 +204,7 @@ class InequalityFilter(BaseModel):
         Args:
             v (int | str | None): 
                 If the value is an empty string, it is converted to None.
+        
         Returns:
             v (int | None):
                 The original value, except that empty strings are converted to None.
@@ -205,7 +228,7 @@ class InterestFilter(BaseModel):
     inequality: Optional[InequalityFilter] = None
 
     @field_validator('inequality')
-    def check_exclusivity(cls, v, values):
+    def check_exclusivity(cls, v, values : ValidationInfo):
         """
         Validates mutual exclusivity between `value`and `inequality`
 
@@ -222,9 +245,9 @@ class InterestFilter(BaseModel):
                 If both `value` and `inequality` are provided,
                 or if neither is provided.
         """
-        if v and values.get('value'):
+        if v and values.data['value']:
             raise ValueError('Provide either a value or an inequality, not both')
-        if not v and not values.get('value'):
+        if not v and not values.data['value']:
             raise ValueError('Provide at least a value or an inequality')
         return v
     
@@ -233,7 +256,9 @@ class  TemporalFilter(BaseModel):
     Helps to filter products by time-based variables. 
     
     Attributes:
+        
         low (int):
+        
         high (int):
     """
     low: int
@@ -245,10 +270,13 @@ class SpatialFilter(BaseModel):
     and municipality.
 
     Attributes:
+        
         country (str):
             Name of the country where the product is based on.
+        
         state (str):
             Name of the state where the product is based on.
+        
         municipality (str):
             Name of the municipality where the product is based on.
         
@@ -282,9 +310,11 @@ class ProductFilter(BaseModel):
     Attributes:
         temporal (TemporalFilter | None):
             Represents the temporal filters (e.g. date range).
+        
         spatial (SpatialFilter | None):
             Represents the spatial filters
             (e.g. country, state , municipality).
+        
         interest (List[InterestFilter]):
             Represents a collection of a product interest attributes
             (e.g. demographic attributes such as age or sex).
@@ -301,17 +331,20 @@ class Level(BaseModel):
     Attributes:
         index (int):
             Position in the user interface.
+        
         cid (str): 
             Catalog unique identifier for this level.
+        
         value (str): 
             The value in the catalog
+        
         kind (str): 
             The kind of the level spatial, temporal, and so on.
     """
     index:int
     cid:str
     value:str
-    kind:str =""
+    kind:KindEnum
 
 class Product(BaseModel):
     """
@@ -321,20 +354,28 @@ class Product(BaseModel):
     Attributes:
         pid (str): 
             Product unique identifier.
+            
         description (str): 
             Textual description of the product.
+        
         levels (List[Level]):
             List of catalog levels that defines the product's position.
+        
         product_type (str): 
             Category of the product.
+        
         level_path (str):
             The name of the levels.
+        
         profile (str):
             The value of the levels. 
+        
         product_name (str): 
             Display name of the product.
+        
         tags (List[str]): 
             Tags for advancing permission control.
+        
         url (str):
             Path to the product in the application.
     """
@@ -347,3 +388,4 @@ class Product(BaseModel):
     product_name: str=""
     tags:List[str]=[]
     url:str =""
+    

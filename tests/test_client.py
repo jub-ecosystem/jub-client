@@ -7,6 +7,24 @@ from jub.dto import Observatory
 def client():
     return JubClient(hostname="localhost", port=5000)
 
+@pytest.fixture
+def obid(client):
+    local_obs = Observatory(
+            title       = "Test Observatory",
+            description = "This is a test observatory",
+            catalogs    = []
+    )
+    
+    result = client.create_observatory(
+        observatory =local_obs
+    )
+
+    assert result.is_ok
+    obid = result.unwrap()
+    yield obid
+    # Cleanup after test
+    client.delete_observatory(obid=obid)
+
 def test_get_observatories(client):
     
     # GET /api/v4/observatories [Observatories]
@@ -46,3 +64,8 @@ def test_create_observatory(client):
     assert remote_obs.title == local_obs.title
     assert remote_obs.description == local_obs.description
     # assert remote_obs.name
+
+def test_delete_observatory(client, obid):
+    res = client.delete_observatory(obid=obid)
+    assert res.is_ok
+    assert res.unwrap() == obid

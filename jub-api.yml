@@ -13,10 +13,7 @@ services:
   command: mongod --config /etc/mongo/mongod.conf
   
  jub:
-  build:
-    context: .
-    dockerfile: ${JUB_DOCKERFILE:-Dockerfile}
-  image: ${JUB_IMAGE_NAME:-nachocode/jub:api-0.0.1a0}
+  image: ${JUB_IMAGE_NAME:-nachocode/jub:api-0.0.1a1-nightly}
   env_file:
     - .env.dev
   ports:
