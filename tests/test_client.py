@@ -5,7 +5,7 @@ from jub.dto import Observatory
 
 @pytest.fixture
 def client():
-    return JubClient(hostname="localhost", port=6000)
+    return JubClient(hostname="localhost", port=5000)
 
 @pytest.fixture
 def obid(client):
