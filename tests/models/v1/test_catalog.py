@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 
 from pathlib import Path
-from jub.dto import Catalog, CatalogItem
+from jub.dto.v1 import Catalog, CatalogItem
 
 def test_default_values_catalog():
     catalog = Catalog()

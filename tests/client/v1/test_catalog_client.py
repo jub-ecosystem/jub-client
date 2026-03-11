@@ -13,7 +13,7 @@
 
 from jub.client import JubClient
 from nanoid import generate as nanoid
-from jub.dto import Catalog, KindEnum
+from jub.dto.v1 import Catalog, KindEnum
 import pytest
 import jub.config as CX
 

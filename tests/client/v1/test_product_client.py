@@ -14,8 +14,8 @@
 import pytest
 import jub.config as CX
 from nanoid import generate as nanoid
-from jub.client import JubClient
-from jub.dto import Catalog, KindEnum, Level, LevelCatalog, Observatory, Product, ProductFilter
+from jub.client.v1 import JubClient
+from jub.dto.v1 import Catalog, KindEnum, Level, LevelCatalog, Observatory, Product, ProductFilter
 
 @pytest.fixture
 def client():
