@@ -1,7 +1,30 @@
-from option import Err, Ok, Result
-import requests as R
 
+# Copyright 2026 MADTEC-2025-M-478 Project Team
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+import requests as R
+import jub.config as CX
+import logging
+from option import Err, Ok, Result
 from jub.dto.v2 import Observatory
+from jub.log import Log
+
+log = Log(
+    name                   = __name__ ,
+    path                   = CX.JUB_CLIENT_LOG_PATH ,
+    file_handler_filter    = lambda record: record.levelno == logging.INFO
+)
+
 class JubClient(object):
 
     def __init__(self,hostname:str, port:int=-1):
