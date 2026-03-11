@@ -179,7 +179,6 @@ class JubClient(object):
             response = R.get(url=url)
             response.raise_for_status()
             data = response.json()
-            print(data)
             return Ok(Observatory(
                 obid= data["obid"],
                 title= data["title"],
@@ -215,7 +214,6 @@ class JubClient(object):
             response = R.get(url=url)
             response.raise_for_status()
             data = response.json()
-            print(data)
             observatories = list(map(lambda x: Observatory(**x), data))
             return Ok(observatories)
         except Exception as e:
@@ -403,7 +401,6 @@ class JubClient(object):
             response = R.post(url=url, json= filter.model_dump())
             response.raise_for_status()
             data = response.json()
-            print(data)
             products = list(map(lambda x : Product(**x), data))
             return Ok(products)
         except Exception as e:

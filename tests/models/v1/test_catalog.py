@@ -52,7 +52,7 @@ def test_validators_catalog():
     
 
 def test_create_catalog_from_json():
-    JSON_PATH = (Path(__file__).parent).parent.joinpath("data/catalog.json")
+    JSON_PATH = (Path(__file__).parent.parent).parent.joinpath("data/catalog.json")
     catalog = Catalog.from_json(JSON_PATH)
 
     assert isinstance(catalog,Catalog)
