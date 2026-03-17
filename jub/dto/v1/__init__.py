@@ -17,7 +17,7 @@ from enum import Enum
 import re
 import json as J
 from typing import List,Dict,Optional
-from pydantic import BaseModel, ValidationInfo,field_validator
+from pydantic import BaseModel, ValidationInfo,field_validator,Field
 
 class KindEnum(str,Enum):
     interest = "INTEREST"
@@ -94,8 +94,8 @@ class CatalogItem(BaseModel):
     value:str
     display_name:str
     code:int
-    description:str
-    metadata:Dict[str,str]
+    description:Optional[str]=""
+    metadata:Optional[Dict[str,str]] = Field(default_factory=dict)
 
 class Catalog(BaseModel):
     """
@@ -109,10 +109,10 @@ class Catalog(BaseModel):
         display_name (str): 
             Human-readable name of the catalog.
         
-        items (str): 
+        items (List[CatalogItem]): 
             Collection of items that belong to this catalog.
         
-        kind (str): 
+        kind (KindEnum): 
             Type of the catalog (e.g. 'TEMPORAL','SPATIAL','INTEREST')
     
     Validators :
@@ -174,7 +174,8 @@ class Catalog(BaseModel):
         """
         with open(path,"rb") as f:
             data = J.loads(f.read())
-            catalog = Catalog(**data)
+            # print("DATA",data,type(data))
+            catalog = Catalog.model_validate(data)
             return catalog
 
 class InequalityFilter(BaseModel):

@@ -51,18 +51,15 @@ class JubClient(object):
                 Its built from the base_url attribute, for example : http://localhost:5000/products
         """
 
-    def __init__(self,hostname:str, port:int=-1):
+    def __init__(self,api_url:str="http://localhost:5000"):
         """
         Initializes the client instance based on a host and port.
 
         Args:
-            hostname (str) :
-                Path to our API service, for example localhost.
-
-            port (int) : 
-                The port where our API is listening.     
+            api_url (str) :
+                The base URL of the API service, for example http://localhost:5000.
         """
-        self.base_url = "https://{}".format(hostname) if port == -1 else "http://{}:{}".format(hostname,port)
+        self.base_url = api_url
         self.observatories_url = "{}/observatories".format(self.base_url)
         self.catalogs_url = "{}/catalogs".format(self.base_url)
         self.products_url = "{}/products".format(self.base_url)

@@ -27,8 +27,9 @@ log = Log(
 
 class JubClient(object):
 
-    def __init__(self,hostname:str, port:int=-1):
-        self.base_url = "https://{}/v2".format(hostname) if port == -1 else "http://{}:{}/v2".format(hostname,port)
+    def __init__(self,api_url:str):
+        # self.base_url = "https://{}/v2".format(hostname) if port == -1 else "http://{}:{}/v2".format(hostname,port)
+        self.base_url = "{}/v2".format(api_url)
         self.observatories_url = "{}/observatories".format(self.base_url)
         self.catalogs_url = "{}/catalogs".format(self.base_url)
         self.products_url = "{}/products".format(self.base_url)
