@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 
-from jub.dto import KindEnum, Level, Product
+from jub.dto.v1 import KindEnum, Level, Product
 
 def test_verify_default_values():
     product = Product()

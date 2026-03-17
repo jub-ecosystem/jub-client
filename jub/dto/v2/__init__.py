@@ -1,7 +1,5 @@
 from pydantic import BaseModel,Field, field_validator
 from typing import Dict, List
-
-from jub.dto import LevelCatalog
 """
 Client Adjustment Notes for V2 DTOs
 
@@ -198,7 +196,6 @@ class ObservatoryCatalogLink(BaseModel):
     """
     obid : str
     cid : str
-    level : LevelCatalog
     
 class CatalogItemLink(BaseModel):
     """
@@ -250,5 +247,4 @@ class ProductCatalogItemLink(BaseModel):
     """
     pid : str
     item_id : str
-    level : LevelCatalog
     kind : str

@@ -16,7 +16,7 @@
 import requests as R
 from nanoid import generate as nanoid
 from option import Result,Ok,Err
-from jub.dto import Observatory, Catalog, Product, ProductFilter, LevelCatalog
+from jub.dto.v1 import Observatory, Catalog, Product, ProductFilter, LevelCatalog
 from typing import List
 import time as T
 from jub.log import Log 
@@ -51,18 +51,15 @@ class JubClient(object):
                 Its built from the base_url attribute, for example : http://localhost:5000/products
         """
 
-    def __init__(self,hostname:str, port:int=-1):
+    def __init__(self,api_url:str="http://localhost:5000"):
         """
         Initializes the client instance based on a host and port.
 
         Args:
-            hostname (str) :
-                Path to our API service, for example localhost.
-
-            port (int) : 
-                The port where our API is listening.     
+            api_url (str) :
+                The base URL of the API service, for example http://localhost:5000.
         """
-        self.base_url = "https://{}".format(hostname) if port == -1 else "http://{}:{}".format(hostname,port)
+        self.base_url = api_url
         self.observatories_url = "{}/observatories".format(self.base_url)
         self.catalogs_url = "{}/catalogs".format(self.base_url)
         self.products_url = "{}/products".format(self.base_url)
@@ -90,7 +87,7 @@ class JubClient(object):
             # Server side validation for image_url and obid
             if observatory.image_url == "":
                 observatory.image_url = "https://ivoice.live/wp-content/uploads/2019/12/no-image-1.jpg"
-                
+            
             if observatory.obid == "":
                 observatory.obid = nanoid(alphabet=CX.JUB_CLIENT_OBSERVATORY_ID_ALPHABET, size=CX.JUB_CLIENT_OBSERVATORY_ID_SIZE)
             # 
@@ -133,7 +130,7 @@ class JubClient(object):
         every item of the collection will be serializated and stored in a list before being 
         sended through a body.
 
-        Args :
+        Args:
             obid (str):
                 The ID of the Observatory of which the catalogs will be 
                 updated.
@@ -141,7 +138,7 @@ class JubClient(object):
             catalogs (List[LevelCatalog]):
                 A collection of Catalogs.
 
-        Returns :
+        Returns:
             Ok(str):
                 The ID of the observatory that its catalogs were updated.
             
@@ -166,7 +163,7 @@ class JubClient(object):
             obid (str):
                 The unique identifier of the observatory.   
         
-        Returns :
+        Returns:
             Ok(Observatory):
                 A valid Observatory model instance.
 
@@ -179,7 +176,6 @@ class JubClient(object):
             response = R.get(url=url)
             response.raise_for_status()
             data = response.json()
-            print(data)
             return Ok(Observatory(
                 obid= data["obid"],
                 title= data["title"],
@@ -215,7 +211,6 @@ class JubClient(object):
             response = R.get(url=url)
             response.raise_for_status()
             data = response.json()
-            print(data)
             observatories = list(map(lambda x: Observatory(**x), data))
             return Ok(observatories)
         except Exception as e:
@@ -403,7 +398,6 @@ class JubClient(object):
             response = R.post(url=url, json= filter.model_dump())
             response.raise_for_status()
             data = response.json()
-            print(data)
             products = list(map(lambda x : Product(**x), data))
             return Ok(products)
         except Exception as e:

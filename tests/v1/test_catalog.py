@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 
 from pathlib import Path
-from jub.dto import Catalog, CatalogItem
+
+from httpx import patch
+from jub.dto.v1 import Catalog, CatalogItem
 
 def test_default_values_catalog():
     catalog = Catalog()
@@ -52,13 +54,26 @@ def test_validators_catalog():
     
 
 def test_create_catalog_from_json():
-    JSON_PATH = (Path(__file__).parent).parent.joinpath("data/catalog.json")
-    catalog = Catalog.from_json(JSON_PATH)
-
-    assert isinstance(catalog,Catalog)
-    assert catalog.cid == "7jz0ygosp3oe"
-    assert catalog.kind == "SPATIAL"
-
+    # JSON_PATH = (Path(__file__).parent.parent).joinpath("./data/catalogs/sex.json")
+    from unittest.mock import patch, mock_open
+    mock_json_content = """
+    {
+        "cid": "sex3fb25a076cf021f2",
+        "display_name": "Sexo",
+        "items": [
+            {"value": "HOMBRE", "display_name": "Hombre", "code": 0},
+            {"value": "MUJER", "display_name": "Mujer", "code": 1}
+        ],
+        "kind": "INTEREST"
+    }
+    """
+    with patch("builtins.open", mock_open(read_data=mock_json_content)):
+        # The path here doesn't even need to exist!
+        catalog = Catalog.from_json("fake_path.json")
+    
+    # 3. Assertions
+    assert catalog.cid == "sex3fb25a076cf021f2"
+    assert len(catalog.items) == 2
 def test_default_mutables():
     """
     Verifies that each Catalog instance has an independent

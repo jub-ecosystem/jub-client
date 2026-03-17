@@ -12,13 +12,8 @@
 # See the License for the specific language governing permissions and
 
 import pytest
-from jub.client import JubClient
-from jub.dto import InequalityFilter, InterestFilter, ProductFilter, SpatialFilter, TemporalFilter
+from jub.dto.v1 import InequalityFilter, InterestFilter, ProductFilter, SpatialFilter, TemporalFilter
 
-
-@pytest.fixture
-def client():
-    return JubClient(hostname="localhost",port=5000)
 
 def test_inequality_filter_defaults():
     inequality_filter = InequalityFilter()

@@ -11,11 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 
-from dataclasses import dataclass
-from doctest import FAIL_FAST
-from typing import List
-
-from jub.dto import LevelCatalog, Observatory
+from jub.dto.v1 import Observatory
 
 
 def test_default_values_observatory():
