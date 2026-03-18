@@ -15,6 +15,7 @@ requests = "^2.31.0"
 nanoid = "^2.0.0"
 mictlanx = "0.1.0a3"
 zensical = "^0.0.24"
+httpx = "^0.28.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.1.1"
