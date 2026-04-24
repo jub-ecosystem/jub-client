@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from jub.client.v1 import JubClient
+from jub.client.v2 import JubClient
