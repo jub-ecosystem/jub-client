@@ -1,61 +1,66 @@
 # Deployment
 
-When running `deploy.sh`, two Docker containers are created :
+Running `deploy.sh` starts the services required by the client:
 
-* Jub API
-    The API service listens on port 5000 by default.
-* A Mongo database
-    The database service listens on port 27017 by default
+```bash
+chmod +x deploy.sh
+./deploy.sh
+```
 
-Both ports can be configured in the `.env.dev` file through the variables `JUB_PORT` and `JUB_MONGODB_PORT`.
+This spins up two Docker containers:
 
-<h2>Base URL</h2>
-When a `JubClient` instance is created , it builds a base URL using the provided initialization parameters.
+| Container | Default port | Configured via |
+|---|---|---|
+| **JUB API** | `5000` | `JUB_PORT` in `.env.dev` |
+| **MongoDB** | `27017` | `JUB_MONGODB_PORT` in `.env.dev` |
 
-Example :
+---
 
-```python
-from jub import JubClient
-client = JubClient(hostname = "localhost",port = 5000)
-``` 
-Given these parameters, the client constructs the base URL in the following format : 
+## Connecting the client
 
-`http://localhost:5000`
-
-The client uses the [**HTTP**](https://en.wikipedia.org/wiki/HTTP) scheme by default. If [**HTTPS**](https://en.wikipedia.org/wiki/HTTPS) is required, this must be explicitly configured (for example, passing a full base URL)
-
-All endpoint URLs are derived from this base URL. For example :
-
-* Observatories
-    `http://localhost:5000/observatories`
-
-* Catalogs
-    `http://localhost:5000/catalogs`
-
-* Products
-    `http://localhost:5000/products`
-
-<h2>Sending a request</h2>
-
-For this request example we will create a new Observatory, first initalize the corresponding DTO :
+Pass the API base URL when creating `JubClient`. The client appends `/api/v2` automatically.
 
 ```python
-from jub.dto import Observatory
-obs = Observatory(
-    title="Test Observatory",
-    description="This is a test observatory",
-    catalogs=[]
+from jub.client.v2 import JubClient
+
+client = JubClient(
+    api_url  = "http://localhost:5000",
+    username = "admin",
+    password = "secret",
 )
+await client.authenticate()
 ```
-Then call the `create_observatory()` method : 
+
+Given `api_url="http://localhost:5000"`, the resolved endpoints are:
+
+- Observatories → `http://localhost:5000/api/v2/observatories`
+- Catalogs → `http://localhost:5000/api/v2/catalogs`
+- Products → `http://localhost:5000/api/v2/products`
+- … and so on for every resource group.
+
+!!! note "HTTPS"
+    The client uses HTTP by default. To use HTTPS, provide the full URL including `https://` and ensure the server has a valid certificate or configure `verify=False` in the underlying httpx client.
+
+---
+
+## Using JubClientBuilder
+
+`JubClientBuilder` is a convenience builder that authenticates during construction and returns an already-authenticated client:
+
 ```python
-response = client.create_observatory(observatory=obs)
+from jub.client.v2 import JubClientBuilder
+import os
+
+result = await JubClientBuilder(
+    api_url  = os.environ.get("JUB_API_URL",  "http://localhost:5000"),
+    username = os.environ.get("JUB_USERNAME", "admin"),
+    password = os.environ.get("JUB_PASSWORD", "secret"),
+).build()
+
+if result.is_ok:
+    client = result.unwrap()
+else:
+    raise result.unwrap_err()
 ```
 
-Internally, this method:
-
-1. Serializes the observatory model using `model_dump()`.
-2. Performs an HTTP POST request to `/observatories`.
-3. Sends the serialiezd model as the JSON body of the request.
-
-The method returns the API response, the ID of the Observatory created.
+The builder calls `authenticate()` internally. If authentication fails, `.build()` returns `Err(Exception)`.
