@@ -27,8 +27,9 @@ jobs:
       - name: Prepare log folder
         run: |
           mkdir -p "${JUB_CLIENT_LOG_PATH}"
-      - name: Start OCA Service
+      - name: Start JUB Service
         run: |
+          docker network create jub
           chmod +x deploy.sh && ./deploy.sh
       - name: List containers
         run: |

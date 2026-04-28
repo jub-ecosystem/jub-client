@@ -1,0 +1,70 @@
+[
+  {
+    "name": "Biological Sex",
+    "value": "SEX",
+    "catalog_type": "INTEREST",
+    "description": "Biological sex dimension for disaggregated analysis",
+    "items": [
+      {
+        "name": "Female",
+        "value": "MUJER",
+        "code": 2,
+        "value_type": "STRING",
+        "description": "Female biological sex",
+        "temporal_value": null,
+        "aliases": [
+          { "value": "F",      "value_type": "STRING", "description": "Short code" },
+          { "value": "Female", "value_type": "STRING", "description": "English label" }
+        ],
+        "children": []
+      },
+      {
+        "name": "Male",
+        "value": "HOMBRE",
+        "code": 1,
+        "value_type": "STRING",
+        "description": "Male biological sex",
+        "temporal_value": null,
+        "aliases": [
+          { "value": "M",    "value_type": "STRING", "description": "Short code" },
+          { "value": "Male", "value_type": "STRING", "description": "English label" }
+        ],
+        "children": []
+      }
+    ]
+  },
+  {
+    "name": "Five-Year Age Groups",
+    "value": "AGE_GROUPS",
+    "catalog_type": "INTEREST",
+    "description": "Standard five-year age cohorts for epidemiological reporting",
+    "items": [
+      { "name": "0–4",   "value": "AG_00_04", "code": 1,  "value_type": "STRING", "description": "Ages 0 to 4",   "temporal_value": null, "aliases": [], "children": [] },
+      { "name": "5–14",  "value": "AG_05_14", "code": 2,  "value_type": "STRING", "description": "Ages 5 to 14",  "temporal_value": null, "aliases": [], "children": [] },
+      { "name": "15–24", "value": "AG_15_24", "code": 3,  "value_type": "STRING", "description": "Ages 15 to 24", "temporal_value": null, "aliases": [], "children": [] },
+      { "name": "25–34", "value": "AG_25_34", "code": 4,  "value_type": "STRING", "description": "Ages 25 to 34", "temporal_value": null, "aliases": [], "children": [] },
+      { "name": "35–44", "value": "AG_35_44", "code": 5,  "value_type": "STRING", "description": "Ages 35 to 44", "temporal_value": null, "aliases": [], "children": [] },
+      { "name": "45–54", "value": "AG_45_54", "code": 6,  "value_type": "STRING", "description": "Ages 45 to 54", "temporal_value": null, "aliases": [], "children": [] },
+      { "name": "55–64", "value": "AG_55_64", "code": 7,  "value_type": "STRING", "description": "Ages 55 to 64", "temporal_value": null, "aliases": [], "children": [] },
+      { "name": "65+",   "value": "AG_65",    "code": 8,  "value_type": "STRING", "description": "Ages 65 and over", "temporal_value": null, "aliases": [], "children": [] }
+    ]
+  },
+  {
+    "name": "Report Years — Extended",
+    "value": "TEMPORAL_YEARS_EXT",
+    "catalog_type": "TEMPORAL",
+    "description": "Annual time dimension extended to 2024",
+    "items": [
+      { "name": "2015", "value": "Y2015", "code": 2015, "value_type": "DATETIME", "temporal_value": "2015-01-01T00:00:00Z", "aliases": [], "children": [] },
+      { "name": "2016", "value": "Y2016", "code": 2016, "value_type": "DATETIME", "temporal_value": "2016-01-01T00:00:00Z", "aliases": [], "children": [] },
+      { "name": "2017", "value": "Y2017", "code": 2017, "value_type": "DATETIME", "temporal_value": "2017-01-01T00:00:00Z", "aliases": [], "children": [] },
+      { "name": "2018", "value": "Y2018", "code": 2018, "value_type": "DATETIME", "temporal_value": "2018-01-01T00:00:00Z", "aliases": [], "children": [] },
+      { "name": "2019", "value": "Y2019", "code": 2019, "value_type": "DATETIME", "temporal_value": "2019-01-01T00:00:00Z", "aliases": [], "children": [] },
+      { "name": "2020", "value": "Y2020", "code": 2020, "value_type": "DATETIME", "temporal_value": "2020-01-01T00:00:00Z", "aliases": [], "children": [] },
+      { "name": "2021", "value": "Y2021", "code": 2021, "value_type": "DATETIME", "temporal_value": "2021-01-01T00:00:00Z", "aliases": [], "children": [] },
+      { "name": "2022", "value": "Y2022", "code": 2022, "value_type": "DATETIME", "temporal_value": "2022-01-01T00:00:00Z", "aliases": [], "children": [] },
+      { "name": "2023", "value": "Y2023", "code": 2023, "value_type": "DATETIME", "temporal_value": "2023-01-01T00:00:00Z", "aliases": [], "children": [] },
+      { "name": "2024", "value": "Y2024", "code": 2024, "value_type": "DATETIME", "temporal_value": "2024-01-01T00:00:00Z", "aliases": [], "children": [] }
+    ]
+  }
+]

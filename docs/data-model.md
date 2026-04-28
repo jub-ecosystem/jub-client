@@ -1,132 +1,121 @@
-This section describes the data model used in the Jub Client. It includes the main entities, their attributes, and relationships.
+# Data Model
 
-<h2>Observatory</h2>
+The JUB data model follows the **STORI** schema — data is organised along five dimensions:
 
-An `Observatory` is an object that contains N catalogs and products.
+| Dimension | Prefix | Description |
+|---|---|---|
+| **S**patial | `VS` | Geographic scope (country, state, region) |
+| **T**emporal | `VT` | Time range (year, date, period) |
+| **O**bservable | `VO` | Numeric aggregation target (COUNT, AVG, SUM) |
+| **R**eference | — | Metadata and structural context |
+| **I**nterest | `VI` | Categorical filters (diagnoses, demographics, etc.) |
 
-It represents a logical space where products and catalogs are organized and queried.
+---
+
+## Core entities
+
+### Observatory
+
+An Observatory is the top-level container. It groups related Catalogs and Products into a logical analytical space.
 
 ```python
 class Observatory(BaseModel):
-    obid:str=""
-    title: str="Observatory"
-    image_url:str=""
-    description:str=""
-    catalogs:List[LevelCatalog]=[]
-    disabled:bool = False
-
+    obid: str = ""
+    title: str = "Observatory"
+    image_url: str = ""
+    description: str = ""
+    disabled: bool = False
 ```
 
-**Attributes**
+| Field | Type | Description |
+|---|---|---|
+| `obid` | `str` | Unique identifier |
+| `title` | `str` | Display name |
+| `image_url` | `str` | URL of a representative image |
+| `description` | `str` | Textual description |
+| `disabled` | `bool` | `True` when the observatory is inactive |
 
-* `obid` : `str`
-    Unique identifier of the observatory.
+---
 
-* `title` : `str`
-    Display name used for the observatory.
+### Catalog
 
-* `image_url` : `str`
-    URL of an image to represent the observatory.
-
-* `description` : `str`
-    Textual description providing context.
-
-* `catalogs` : `List[LevelCatalog]`
-    Collection of instances from the LevelCatalog model that references the catalogs and their levels.
-
-* `disabled`: `bool`
-    Indicates whether the observatory is inactive.
-
-**Embedded Structure**
-The `catalogs` attribute embeds catalog-level structures directly inside the observatory. This means that, in this V1 models, the observatory contains its catalog configuration as part of its structure.
-
-<h2>Catalog</h2>
-
-`Catalog` represents a dynamic collection of Xvars, used for organizing and validating attributes across specific categories.
+A Catalog is a controlled vocabulary — an ordered set of items used to classify and filter data.
 
 ```python
 class Catalog(BaseModel):
-    cid:str = ""
-    display_name:str = ""
-    items: List[CatalogItem] = []
-    kind:str = ""
+    cid: str = ""
+    display_name: str = ""
+    kind: str = ""
 ```
 
-Attributes
+| Field | Type | Description |
+|---|---|---|
+| `cid` | `str` | Unique identifier |
+| `display_name` | `str` | Human-readable name (whitespace is normalised automatically) |
+| `kind` | `str` | Catalog type: `SPATIAL`, `TEMPORAL`, `INTEREST` |
 
-* `cid` : `str`
-    Unique identifier of the catalog.
+---
 
-* `display_name` : `str`
-    Human-readable name of the catalog.
+### Catalog Item
 
-* `items` : `List[CatalogItem]`
-    Collection of items that belong to this catalog.
+A Catalog Item is a single entry within a catalog. Items can be nested hierarchically (e.g. Country → State → Municipality).
 
-* `kind` : `str`
-    Type of the catalog (e.g. TEMPORAL, SPATIAL, INTEREST).
+```python
+class CatalogItem(BaseModel):
+    item_id: str
+    value: str
+    display_name: str
+    code: int
+    description: str
+    metadata: Dict[str, str]
+```
 
-**Validators**
+| Field | Type | Description |
+|---|---|---|
+| `item_id` | `str` | Unique identifier |
+| `value` | `str` | Stored value used in queries (e.g. `MX`, `C_MAMA`) |
+| `display_name` | `str` | Human-readable label |
+| `code` | `int` | Numeric code for the item |
+| `description` | `str` | Contextual description |
+| `metadata` | `Dict[str, str]` | Arbitrary key-value metadata |
 
-* `display_name` is normalized by collapsing consecutive whitespace into a single space.
+---
 
-* `items` ensures type consistency (dict → `CatalogItem`) and normalizes each item's `display_name`.
+### Product
 
-Embedded Structure
-
-The `items` attribute embeds `CatalogItem` instances directly inside the catalog.
-Catalog items are not referenced externally; they are stored as part of the catalog structure.
-
-<h2>Product</h2>
-
-`Product` represents the visual representation of combinations of values from catalogs.
-Each product can be visualized as a dataview, chart, or item in the UI.
+A Product represents a data view — a chart, table, or dataset linked to an Observatory and tagged with Catalog Items.
 
 ```python
 class Product(BaseModel):
-    pid:str=""
-    description:str=""
-    levels:List[Level]=[]
-    product_type: str=""
-    level_path:str=""
-    profile:str=""
-    product_name: str=""
-    tags:List[str]=[]
-    url:str =""
+    pid: str = ""
+    description: str = ""
+    product_type: str = ""
+    product_name: str = ""
+    tags: List[str] = []
+    url: str = ""
 ```
 
-**Attributes**
+| Field | Type | Description |
+|---|---|---|
+| `pid` | `str` | Unique identifier |
+| `description` | `str` | Textual description |
+| `product_type` | `str` | Category (e.g. `MAP`, `CHART`, `TABLE`) |
+| `product_name` | `str` | Display name |
+| `tags` | `List[str]` | Catalog item IDs used for filtering and permissions |
+| `url` | `str` | Path to the product in the application |
 
-* `pid`: `str`
-    Product unique identifier.
+---
 
-* `description`: `str`
-    Textual description of the product.
+## Relationships
 
-* `levels`: `List[Level]`
-    List of catalog levels that defines the product's position.
+Entities in v2 are **not embedded** — they are linked through explicit relationship objects.
 
-* `product_type`: `str`
-    Category of the product.
+| Relationship | Connects |
+|---|---|
+| `ObservatoryCatalogLink` | Observatory ↔ Catalog |
+| `CatalogItemLink` | Catalog ↔ Catalog Item |
+| `ProductObservatoryLink` | Product ↔ Observatory |
+| `ProductCatalogItemLink` | Product ↔ Catalog Item (tag) |
 
-* `level_path`: `str`
-    The name of the levels.
-
-* `profile`: `str`
-    The value of the levels.
-
-* `product_name`: `str`
-    Display name of the product.
-
-* `tags` : `List[str]`
-    Tags for advancing permission control.
-
-* `url` : `str`
-    Path to the product in the application.
-
-
-**Embedded Relationship via Levels**
-
-The `levels` attribute embeds `Level` instances inside the product.
-
-Each `Level` corresponds to a value defined within a catalog.
+!!! info "v2 vs v1"
+    In v1 the Observatory embedded its catalogs and items directly. In v2 all relationships are expressed through link objects and managed via dedicated API endpoints. This decoupling allows items to belong to multiple catalogs and products to be tagged across multiple catalogs.

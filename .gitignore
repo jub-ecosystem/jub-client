@@ -4,3 +4,7 @@ data/**/*
 **/**/__pycache__
 .coverage
 site/
+scripts/
+.claude
+CLAUDE.md
+.cache

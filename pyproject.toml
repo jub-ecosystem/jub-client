@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "jub"
-version = "0.0.1a0"
+version = "0.1.0a0"
 description = ""
 authors = ["Ignacio Castillo <jcastillo@mictlanx.com>"]
 readme = "README.md"
@@ -15,13 +15,14 @@ requests = "^2.31.0"
 nanoid = "^2.0.0"
 mictlanx = "0.1.0a3"
 zensical = "^0.0.24"
+httpx = "^0.28.1"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.1.1"
 pandas = "1.4.3"
 coverage = "^7.13.4"
 mkdocstrings-python = "^2.0.3"
 pytest-asyncio = "^1.3.0"
+pytest = "^9.0.3"
 
 [[tool.poetry.source]]
 name = "test"
@@ -31,3 +32,7 @@ priority = "supplemental"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

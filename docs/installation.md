@@ -1,47 +1,68 @@
 # Installation
 
-<h2>Cloning the repository</h2>
-Clone the Jub Client repository :
-```
-git clone https://github.com/jub-ecosystem/jub-client
-```
+## Prerequisites
 
-Jub Client has a few requeriments:
+- Python 3.10+
+- [Poetry](https://python-poetry.org/) — used to manage dependencies and the virtual environment.
 
+Install Poetry with pipx (recommended):
 
-- [Poetry](https://python-poetry.org/)
-
-Install them with :
-
-```
+```bash
 pipx install poetry
 ```
-> [**pipx**](https://pipx.pypa.io/stable/) is used to install Python CLI applications globally while still isolating them in virtual environments. 
 
-<h2>Installing dependencies</h2>
-After you cloned the repository , you must navigate to the **jub-client** folder and install the project dependencies with **poetry** :
+!!! tip "Why pipx?"
+    [pipx](https://pipx.pypa.io/stable/) installs CLI tools in isolated environments so they don't interfere with your project dependencies.
 
-```
+---
+
+## Clone the repository
+
+```bash
+git clone https://github.com/jub-ecosystem/jub-client
 cd jub-client
+```
+
+---
+
+## Install dependencies
+
+```bash
 poetry install
 ```
 
-Now you should activate the virtual env : 
-```
+Activate the virtual environment:
+
+```bash
 poetry self add poetry-plugin-shell
 poetry shell
 ```
 
+---
 
-<h2>Running the project</h2>
-```
-chmod +x deploy.sh
-./deploy.sh
-```
-This will deploy the services such as the API and database of the project.
+## Configure environment variables
 
-Now you can run the test in the `tests/` folder :
+Copy the example environment file and fill in your values:
 
+```bash
+cp .env.dev .env
 ```
+
+| Variable | Default | Description |
+|---|---|---|
+| `JUB_API_URL` | `http://localhost:5000` | Base URL of the JUB API |
+| `JUB_USERNAME` | — | Login username |
+| `JUB_PASSWORD` | — | Login password |
+| `JUB_CLIENT_LOG_PATH` | `/log` | Directory for JSON log files |
+| `JUB_CLIENT_OBSERVATORY_ID_SIZE` | `12` | Length of generated observatory IDs |
+
+---
+
+## Run the tests
+
+Make sure the API is running (see [Deployment](deployment.md)), then:
+
+```bash
 coverage run -m pytest tests/
+coverage report
 ```

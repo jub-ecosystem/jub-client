@@ -1,0 +1,72 @@
+[
+  {
+    "record_id":              "rec_cdmx_2022_mujer_mama",
+    "spatial_id":             "<catalog_item_id:CDMX>",
+    "temporal_id":            "2022-01-01T00:00:00Z",
+    "interest_ids":           ["<catalog_item_id:MUJER>", "<catalog_item_id:C_MAMA>"],
+    "numerical_interest_ids": { "TASA_100K": 28.4, "CASOS": 1842 },
+    "raw_payload": {
+      "estado":    "Ciudad de Mexico",
+      "cve_ent":   "09",
+      "anio":      2022,
+      "dx_cie10":  "C50",
+      "fuente":    "SINAIS"
+    }
+  },
+  {
+    "record_id":              "rec_cdmx_2022_mujer_cervix",
+    "spatial_id":             "<catalog_item_id:CDMX>",
+    "temporal_id":            "2022-01-01T00:00:00Z",
+    "interest_ids":           ["<catalog_item_id:MUJER>", "<catalog_item_id:C_CERVIX>"],
+    "numerical_interest_ids": { "TASA_100K": 12.1, "CASOS": 784 },
+    "raw_payload": {
+      "estado":    "Ciudad de Mexico",
+      "cve_ent":   "09",
+      "anio":      2022,
+      "dx_cie10":  "C53",
+      "fuente":    "SINAIS"
+    }
+  },
+  {
+    "record_id":              "rec_jalisco_2022_mujer_mama",
+    "spatial_id":             "<catalog_item_id:JALISCO>",
+    "temporal_id":            "2022-01-01T00:00:00Z",
+    "interest_ids":           ["<catalog_item_id:MUJER>", "<catalog_item_id:C_MAMA>"],
+    "numerical_interest_ids": { "TASA_100K": 24.7, "CASOS": 2103 },
+    "raw_payload": {
+      "estado":    "Jalisco",
+      "cve_ent":   "14",
+      "anio":      2022,
+      "dx_cie10":  "C50",
+      "fuente":    "SINAIS"
+    }
+  },
+  {
+    "record_id":              "rec_nl_2022_hombre_prostata",
+    "spatial_id":             "<catalog_item_id:NL>",
+    "temporal_id":            "2022-01-01T00:00:00Z",
+    "interest_ids":           ["<catalog_item_id:HOMBRE>", "<catalog_item_id:C_PROSTATA>"],
+    "numerical_interest_ids": { "TASA_100K": 19.3, "CASOS": 967 },
+    "raw_payload": {
+      "estado":    "Nuevo Leon",
+      "cve_ent":   "19",
+      "anio":      2022,
+      "dx_cie10":  "C61",
+      "fuente":    "SINAIS"
+    }
+  },
+  {
+    "record_id":              "rec_cdmx_2021_mujer_mama",
+    "spatial_id":             "<catalog_item_id:CDMX>",
+    "temporal_id":            "2021-01-01T00:00:00Z",
+    "interest_ids":           ["<catalog_item_id:MUJER>", "<catalog_item_id:C_MAMA>"],
+    "numerical_interest_ids": { "TASA_100K": 27.1, "CASOS": 1744 },
+    "raw_payload": {
+      "estado":    "Ciudad de Mexico",
+      "cve_ent":   "09",
+      "anio":      2021,
+      "dx_cie10":  "C50",
+      "fuente":    "SINAIS"
+    }
+  }
+]
