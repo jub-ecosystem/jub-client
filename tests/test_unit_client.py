@@ -111,10 +111,10 @@ async def test_authenticate_failure_returns_err():
     assert result.is_err
 
 
-def test_check_auth_decorator_returns_err_when_no_token():
+@pytest.mark.asyncio
+async def test_check_auth_decorator_returns_err_when_no_token():
     c = JubClient("http://localhost:5000", "admin", "secret")
-    # _token is None — check_auth returns Err synchronously (not a coroutine)
-    result = c.get_current_user()
+    result = await c.get_current_user()
     assert result.is_err
     assert "not authenticated" in str(result.unwrap_err()).lower()
 
@@ -340,7 +340,7 @@ async def test_ingest_records(client):
     result = await client.ingest_records("src-001", records)
 
     assert result.is_ok
-    assert result.unwrap()["inserted"] == 1
+    assert result.unwrap().inserted == 1
 
 
 @pytest.mark.asyncio
@@ -538,7 +538,7 @@ async def test_happy_path_observatory_provision():
         ],
     )
     assert ingest_result.is_ok, f"ingest_records failed: {ingest_result.unwrap_err()}"
-    assert ingest_result.unwrap()["inserted"] == 1
+    assert ingest_result.unwrap().inserted == 1
 
     # Step 6 — complete_task (enables the observatory)
     client._post = _ok({

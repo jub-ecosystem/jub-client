@@ -1,6 +1,8 @@
 from pydantic import BaseModel, Field, field_validator
 from typing import Any, Dict, List, Optional, Union
 
+from jub.enums import ServiceProviderEnum
+
 """
 DTOs for the JUB API v2.
 
@@ -371,6 +373,16 @@ class CatalogItemUpdateDTO(BaseModel):
     temporal_value: Optional[str] = None
 
 
+class CatalogItemChildLinkCreateDTO(BaseModel):
+    """Payload for POST /catalog-items/{id}/children."""
+    child_item_id: str
+
+
+class CatalogItemCatalogLinkCreateDTO(BaseModel):
+    """Payload for POST /catalog-items/{id}/catalogs."""
+    catalog_id: str
+
+
 # ── DataSource DTOs ────────────────────────────────────────────
 
 
@@ -733,6 +745,13 @@ class UserProfileDTO(BaseModel):
     updated_at: str = ""
 
 
+class AuthResponseDTO(BaseModel):
+    """Response for POST /users/auth and POST /users/signup."""
+    access_token: str
+    temporal_secret_key: Optional[str] = None
+    user_profile: UserProfileDTO
+
+
 # ── Catalogs (response) ────────────────────────────────────────
 
 
@@ -758,6 +777,19 @@ class ObservatorySetupResponseDTO(BaseModel):
 class ObservatoryDeleteResponseDTO(BaseModel):
     """Response for DELETE /observatories/{id}."""
     deleted: bool
+
+
+class ObservatoryCatalogLinkResponseDTO(BaseModel):
+    """Response for POST /observatories/{id}/catalogs."""
+    observatory_id: str
+    catalog_id: str
+    level: int = 0
+
+
+class ObservatoryProductLinkResponseDTO(BaseModel):
+    """Response for POST /observatories/{id}/products."""
+    observatory_id: str
+    product_id: str
 
 
 class CatalogCreatedResponseDTO(BaseModel):
@@ -853,6 +885,24 @@ class CatalogItemAliasXResponseDTO(BaseModel):
     updated_at: str
 
 
+class CatalogItemChildLinkResponseDTO(BaseModel):
+    """Response for POST /catalog-items/{id}/children."""
+    parent_item_id: str
+    child_item_id: str
+
+
+class CatalogItemCatalogLinkResponseDTO(BaseModel):
+    """Response for POST /catalog-items/{id}/catalogs."""
+    catalog_item_id: str
+    catalog_id: str
+
+
+class ItemProductsDTO(BaseModel):
+    """Response for GET /catalog-items/{id}/products."""
+    catalog_item_id: str
+    product_ids: List[str] = Field(default_factory=list)
+
+
 class ProductSimpleDTO(BaseModel):
     """Response for product CRUD endpoints."""
     product_id: str
@@ -867,10 +917,28 @@ class ProductDeleteResponseDTO(BaseModel):
     deleted: bool
 
 
+class ProductTagsResponseDTO(BaseModel):
+    """Response for GET /products/{id}/tags and POST /products/{id}/tags."""
+    product_id: str
+    catalog_item_ids: List[str] = Field(default_factory=list)
+
+
+class ProductUploadResponseDTO(BaseModel):
+    """Response for POST /products/{id}/upload."""
+    job_id: str
+    product_id: str
+    status: str = "queued"
+
+
 class DataSourceDeleteResponseDTO(BaseModel):
     """Response for DELETE /datasources/{id}."""
     deleted: bool
     records_removed: int
+
+
+class IngestResponseDTO(BaseModel):
+    """Response for POST /datasources/{id}/records."""
+    inserted: int = 0
 
 
 # ── Notifications ──────────────────────────────────────────────
@@ -896,6 +964,20 @@ class NotificationClearReadResponseDTO(BaseModel):
     """
 
     deleted: int
+
+
+class NotificationDTO(BaseModel):
+    """Response item for GET /notifications."""
+    notification_id: str
+    user_id: str = ""
+    status: str = ""
+    operation: str = ""
+    entity: str = ""
+    entity_id: Optional[str] = None
+    title: str = ""
+    message: str = ""
+    is_read: bool = False
+    created_at: str = ""
 
 
 # ── Building blocks ────────────────────────────────────────────
@@ -1158,6 +1240,12 @@ class WorkflowDTO(BaseModel):
     updated_at: str = ""
 
 
+class WorkflowDeleteResponseDTO(BaseModel):
+    """Response for DELETE /workflows/{id}."""
+    deleted: bool
+    cascade: Dict[str, Any] = Field(default_factory=dict)
+
+
 # ── Services ───────────────────────────────────────────────────
 
 
@@ -1178,6 +1266,7 @@ class ServiceCreateDTO(BaseModel):
     description: str = ""
     public: bool = False
     workflow_id: Optional[str] = None
+    provider: Optional[ServiceProviderEnum] = Field(ServiceProviderEnum.OTHER, description="Optional service provider classification (e.g. NEZ, XELHUA, EXTERNAL).")
 
 
 class ServiceUpdateDTO(BaseModel):
@@ -1306,6 +1395,7 @@ class WorkflowInlineDTO(BaseModel):
     stages: List[StageInlineDTO] = Field(default_factory=list)
 
 
+
 class ServiceIndexDTO(BaseModel):
     """
     Payload for POST /services/index.
@@ -1325,10 +1415,11 @@ class ServiceIndexDTO(BaseModel):
 
     name: str
     owner_id: str
-    description: str = ""
-    public: bool = False
-    workflow: Optional[WorkflowInlineDTO] = None
-    workflow_id: Optional[str] = None
+    description: str = Field("", description="Optional description providing context about the service.")
+    public: bool = Field(False, description="Whether this service is publicly discoverable via SVC() DSL queries.")
+    workflow: Optional[WorkflowInlineDTO] = Field(None, description="Inline workflow definition to create together with the service. If provided, workflow_id must be null.")
+    workflow_id: Optional[str] = Field(None, description="ID of an existing workflow to attach instead of creating one inline.")
+    provider: Optional[ServiceProviderEnum ] =Field(ServiceProviderEnum.OTHER, description="Optional service provider classification (e.g. NEZ, XELHUA, EXTERNAL).")
 
 
 class ServiceIndexResponseDTO(BaseModel):

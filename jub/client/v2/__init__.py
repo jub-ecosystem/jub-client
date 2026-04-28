@@ -70,11 +70,10 @@ class JubClientBuilder:
 
 def check_auth(func):
     @wraps(func)
-    def __inner(self, *args, **kwargs):
+    async def __inner(self, *args, **kwargs):
         if self._token is None:
             return Err(Exception("Client is not authenticated. Call authenticate() first."))
-        result = func(self, *args, **kwargs)
-        return result
+        return await func(self, *args, **kwargs)
     return __inner
 
 class JubClient:
@@ -183,12 +182,30 @@ class JubClient:
         except Exception as e:
             return Err(e)
 
-    async def _delete(self, url: str) -> Result[Any, Exception]:
+    async def _delete(self, url: str, params: Dict = None) -> Result[Any, Exception]:
         try:
             async with self._client() as c:
-                r = await c.delete(url)
+                r = await c.delete(url, params=params)
                 r.raise_for_status()
                 return Ok(r.json())
+        except Exception as e:
+            return Err(e)
+
+    async def _delete_no_content(self, url: str, params: Dict = None) -> Result[bool, Exception]:
+        try:
+            async with self._client() as c:
+                r = await c.delete(url, params=params)
+                r.raise_for_status()
+                return Ok(True)
+        except Exception as e:
+            return Err(e)
+
+    async def _put_no_content(self, url: str, payload: Dict) -> Result[bool, Exception]:
+        try:
+            async with self._client() as c:
+                r = await c.put(url, json=payload)
+                r.raise_for_status()
+                return Ok(True)
         except Exception as e:
             return Err(e)
 
@@ -235,7 +252,7 @@ class JubClient:
         except Exception as e:
             return Err(e)
 
-    async def signup(self, dto: DTO.SignUpDTO) -> Result[Any, Exception]:
+    async def signup(self, dto: DTO.SignUpDTO) -> Result[DTO.AuthResponseDTO, Exception]:
         """
         POST /users/signup
 
@@ -245,9 +262,9 @@ class JubClient:
             dto: User registration payload.
 
         Returns:
-            Ok(response_dict) on success, Err(exception) on failure.
+            Ok(AuthResponseDTO) on success, Err(exception) on failure.
         """
-        return await self._post(f"{self._users_url}/signup", dto.model_dump())
+        return self._validated(DTO.AuthResponseDTO, await self._post(f"{self._users_url}/signup", dto.model_dump()))
 
     @check_auth
     async def get_current_user(self) -> Result[DTO.UserProfileDTO, Exception]:
@@ -465,6 +482,48 @@ class JubClient:
         )
         return self._validated(DTO.CatalogItemAliasXResponseDTO, await self._post(f"{self._catalog_items_url}/{catalog_item_id}/aliases", payload))
 
+    async def delete_catalog_item_alias(self, catalog_item_id: str, alias_id: str) -> Result[bool, Exception]:
+        """DELETE /catalog-items/{id}/aliases/{alias_id} — Removes an alias (204 No Content)."""
+        return await self._delete_no_content(f"{self._catalog_items_url}/{catalog_item_id}/aliases/{alias_id}")
+
+    async def list_catalog_item_children(self, catalog_item_id: str) -> Result[List[DTO.CatalogItemXResponseDTO], Exception]:
+        """GET /catalog-items/{id}/children — Returns child items in the hierarchy."""
+        return self._validated_list(DTO.CatalogItemXResponseDTO, await self._get(f"{self._catalog_items_url}/{catalog_item_id}/children"))
+
+    async def link_catalog_item_child(
+        self,
+        catalog_item_id: str,
+        dto: Union[DTO.CatalogItemChildLinkCreateDTO, Dict],
+    ) -> Result[DTO.CatalogItemChildLinkResponseDTO, Exception]:
+        """POST /catalog-items/{id}/children — Links a child item to this item."""
+        payload = dto.model_dump() if isinstance(dto, DTO.CatalogItemChildLinkCreateDTO) else dto
+        return self._validated(DTO.CatalogItemChildLinkResponseDTO, await self._post(f"{self._catalog_items_url}/{catalog_item_id}/children", payload))
+
+    async def unlink_catalog_item_child(self, catalog_item_id: str, child_item_id: str) -> Result[bool, Exception]:
+        """DELETE /catalog-items/{id}/children/{child_id} — Removes a child relationship (204 No Content)."""
+        return await self._delete_no_content(f"{self._catalog_items_url}/{catalog_item_id}/children/{child_item_id}")
+
+    async def list_catalogs_for_item(self, catalog_item_id: str) -> Result[List[DTO.CatalogXDTO], Exception]:
+        """GET /catalog-items/{id}/catalogs — Returns catalogs that contain this item."""
+        return self._validated_list(DTO.CatalogXDTO, await self._get(f"{self._catalog_items_url}/{catalog_item_id}/catalogs"))
+
+    async def link_item_to_catalog(
+        self,
+        catalog_item_id: str,
+        dto: Union[DTO.CatalogItemCatalogLinkCreateDTO, Dict],
+    ) -> Result[DTO.CatalogItemCatalogLinkResponseDTO, Exception]:
+        """POST /catalog-items/{id}/catalogs — Links this item to a catalog."""
+        payload = dto.model_dump() if isinstance(dto, DTO.CatalogItemCatalogLinkCreateDTO) else dto
+        return self._validated(DTO.CatalogItemCatalogLinkResponseDTO, await self._post(f"{self._catalog_items_url}/{catalog_item_id}/catalogs", payload))
+
+    async def unlink_item_from_catalog(self, catalog_item_id: str, catalog_id: str) -> Result[bool, Exception]:
+        """DELETE /catalog-items/{id}/catalogs/{catalog_id} — Removes item from a catalog (204 No Content)."""
+        return await self._delete_no_content(f"{self._catalog_items_url}/{catalog_item_id}/catalogs/{catalog_id}")
+
+    async def list_products_for_item(self, catalog_item_id: str) -> Result[DTO.ItemProductsDTO, Exception]:
+        """GET /catalog-items/{id}/products — Returns product IDs tagged with this item."""
+        return self._validated(DTO.ItemProductsDTO, await self._get(f"{self._catalog_items_url}/{catalog_item_id}/products"))
+
     # ── DataSources  /datasources ──────────────────────────────
 
     async def register_data_source(
@@ -494,7 +553,7 @@ class JubClient:
         json_path: Optional[str] = None,
         json_string: Optional[str] = None,
         data: Optional[Dict] = None,
-    ) -> Result[Any, Exception]:
+    ) -> Result[DTO.DataSourceDTO, Exception]:
         """
         POST /datasources (from JSON source)
 
@@ -507,7 +566,7 @@ class JubClient:
             data: Already-parsed dict matching DataSourceCreateDTO schema.
 
         Returns:
-            Ok(data_source_response_dict) on success, Err(exception) on failure.
+            Ok(DataSourceDTO) on success, Err(exception) on failure.
         """
         if data is not None:
             payload = data
@@ -518,7 +577,7 @@ class JubClient:
                 payload = json.load(f)
         else:
             return Err(ValueError("Provide json_path, json_string, or data."))
-        return await self._post(self._datasources_url, payload)
+        return self._validated(DTO.DataSourceDTO, await self._post(self._datasources_url, payload))
 
     async def list_data_sources(self) -> Result[List[DTO.DataSourceDTO], Exception]:
         """GET /datasources — Returns all registered data sources."""
@@ -536,7 +595,7 @@ class JubClient:
         self,
         source_id: str,
         records: List[Union[DTO.DataRecordCreateDTO, Dict]],
-    ) -> Result[Any, Exception]:
+    ) -> Result[DTO.IngestResponseDTO, Exception]:
         """
         POST /datasources/{source_id}/records
 
@@ -547,14 +606,15 @@ class JubClient:
             records: List of DataRecordCreateDTO instances or plain dicts.
 
         Returns:
-            Ok({inserted: int}) on success, Err(exception) on failure.
+            Ok(IngestResponseDTO) on success, Err(exception) on failure.
         """
         payload = [
             r.model_dump() if isinstance(r, DTO.DataRecordCreateDTO) else r
             for r in records
         ]
-        return await self._post(
-            f"{self._datasources_url}/{source_id}/records", payload
+        return self._validated(
+            DTO.IngestResponseDTO,
+            await self._post(f"{self._datasources_url}/{source_id}/records", payload),
         )
 
     async def ingest_records_from_json(
@@ -563,7 +623,7 @@ class JubClient:
         json_path: Optional[str] = None,
         json_string: Optional[str] = None,
         data: Optional[List[Dict]] = None,
-    ) -> Result[Any, Exception]:
+    ) -> Result[DTO.IngestResponseDTO, Exception]:
         """
         POST /datasources/{source_id}/records (from JSON source)
 
@@ -576,7 +636,7 @@ class JubClient:
             data: Already-parsed list of dicts matching DataRecordCreateDTO schema.
 
         Returns:
-            Ok({inserted: int}) on success, Err(exception) on failure.
+            Ok(IngestResponseDTO) on success, Err(exception) on failure.
         """
         if data is not None:
             payload = data
@@ -587,8 +647,9 @@ class JubClient:
                 payload = json.load(f)
         else:
             return Err(ValueError("Provide json_path, json_string, or data."))
-        return await self._post(
-            f"{self._datasources_url}/{source_id}/records", payload
+        return self._validated(
+            DTO.IngestResponseDTO,
+            await self._post(f"{self._datasources_url}/{source_id}/records", payload),
         )
 
     async def query_records(
@@ -679,7 +740,7 @@ class JubClient:
         self,
         observatory_id: str,
         dto: Union[DTO.LinkCatalogDTO, Dict],
-    ) -> Result[Any, Exception]:
+    ) -> Result[DTO.ObservatoryCatalogLinkResponseDTO, Exception]:
         """
         POST /observatories/{observatory_id}/catalogs
 
@@ -690,11 +751,12 @@ class JubClient:
             dto: LinkCatalogDTO with the catalog_id and display level.
 
         Returns:
-            Ok(link_response_dict) on success, Err(exception) on failure.
+            Ok(ObservatoryCatalogLinkResponseDTO) on success, Err(exception) on failure.
         """
         payload = dto.model_dump() if isinstance(dto, DTO.LinkCatalogDTO) else dto
-        return await self._post(
-            f"{self._observatories_url}/{observatory_id}/catalogs", payload
+        return self._validated(
+            DTO.ObservatoryCatalogLinkResponseDTO,
+            await self._post(f"{self._observatories_url}/{observatory_id}/catalogs", payload),
         )
 
     async def list_observatory_catalogs(
@@ -708,20 +770,20 @@ class JubClient:
 
     async def unlink_catalog_from_observatory(
         self, observatory_id: str, catalog_id: str
-    ) -> Result[Any, Exception]:
+    ) -> Result[bool, Exception]:
         """
         DELETE /observatories/{observatory_id}/catalogs/{catalog_id}
 
-        Removes the link between the given catalog and observatory.
+        Removes the link between the given catalog and observatory (204 No Content).
 
         Args:
             observatory_id: Unique identifier of the observatory.
             catalog_id: Unique identifier of the catalog to unlink.
 
         Returns:
-            Ok(result_dict) on success, Err(exception) on failure.
+            Ok(True) on success, Err(exception) on failure.
         """
-        return await self._delete(
+        return await self._delete_no_content(
             f"{self._observatories_url}/{observatory_id}/catalogs/{catalog_id}"
         )
 
@@ -766,7 +828,7 @@ class JubClient:
         self,
         observatory_id: str,
         dto: Union[DTO.LinkProductDTO, Dict],
-    ) -> Result[Any, Exception]:
+    ) -> Result[DTO.ObservatoryProductLinkResponseDTO, Exception]:
         """
         POST /observatories/{observatory_id}/products
 
@@ -777,29 +839,30 @@ class JubClient:
             dto: LinkProductDTO with the product_id to link.
 
         Returns:
-            Ok(link_response_dict) on success, Err(exception) on failure.
+            Ok(ObservatoryProductLinkResponseDTO) on success, Err(exception) on failure.
         """
         payload = dto.model_dump() if isinstance(dto, DTO.LinkProductDTO) else dto
-        return await self._post(
-            f"{self._observatories_url}/{observatory_id}/products", payload
+        return self._validated(
+            DTO.ObservatoryProductLinkResponseDTO,
+            await self._post(f"{self._observatories_url}/{observatory_id}/products", payload),
         )
 
     async def unlink_product_from_observatory(
         self, observatory_id: str, product_id: str
-    ) -> Result[Any, Exception]:
+    ) -> Result[bool, Exception]:
         """
         DELETE /observatories/{observatory_id}/products/{product_id}
 
-        Removes the link between the given product and observatory.
+        Removes the link between the given product and observatory (204 No Content).
 
         Args:
             observatory_id: Unique identifier of the observatory.
             product_id: Unique identifier of the product to unlink.
 
         Returns:
-            Ok(result_dict) on success, Err(exception) on failure.
+            Ok(True) on success, Err(exception) on failure.
         """
-        return await self._delete(
+        return await self._delete_no_content(
             f"{self._observatories_url}/{observatory_id}/products/{product_id}"
         )
 
@@ -861,7 +924,7 @@ class JubClient:
         """DELETE /products/{id} — Deletes a product and its relationships."""
         return self._validated(DTO.ProductDeleteResponseDTO, await self._delete(f"{self._products_url}/{product_id}"))
 
-    async def get_product_tags(self, product_id: str) -> Result[Dict, Exception]:
+    async def get_product_tags(self, product_id: str) -> Result[DTO.ProductTagsResponseDTO, Exception]:
         """
         GET /products/{product_id}/tags
 
@@ -871,15 +934,15 @@ class JubClient:
             product_id: Unique identifier of the product.
 
         Returns:
-            Ok({product_id, catalog_item_ids}) on success, Err(exception) on failure.
+            Ok(ProductTagsResponseDTO) on success, Err(exception) on failure.
         """
-        return await self._get(f"{self._products_url}/{product_id}/tags")
+        return self._validated(DTO.ProductTagsResponseDTO, await self._get(f"{self._products_url}/{product_id}/tags"))
 
     async def add_product_tags(
         self,
         product_id: str,
         dto: Union[DTO.TagProductDTO, Dict],
-    ) -> Result[Any, Exception]:
+    ) -> Result[DTO.ProductTagsResponseDTO, Exception]:
         """
         POST /products/{product_id}/tags
 
@@ -890,57 +953,70 @@ class JubClient:
             dto: TagProductDTO with list of catalog_item_ids to add.
 
         Returns:
-            Ok(tag_response_dict) on success, Err(exception) on failure.
+            Ok(ProductTagsResponseDTO) on success, Err(exception) on failure.
         """
         payload = dto.model_dump() if isinstance(dto, DTO.TagProductDTO) else dto
-        return await self._post(f"{self._products_url}/{product_id}/tags", payload)
+        return self._validated(DTO.ProductTagsResponseDTO, await self._post(f"{self._products_url}/{product_id}/tags", payload))
 
     async def remove_product_tag(
         self, product_id: str, catalog_item_id: str
-    ) -> Result[Any, Exception]:
+    ) -> Result[bool, Exception]:
         """
         DELETE /products/{product_id}/tags/{catalog_item_id}
 
-        Removes a catalog item tag from a product.
+        Removes a catalog item tag from a product (204 No Content).
 
         Args:
             product_id: Unique identifier of the product.
             catalog_item_id: Unique identifier of the catalog item to detag.
 
         Returns:
-            Ok(result_dict) on success, Err(exception) on failure.
+            Ok(True) on success, Err(exception) on failure.
         """
-        return await self._delete(
+        return await self._delete_no_content(
             f"{self._products_url}/{product_id}/tags/{catalog_item_id}"
         )
 
-    async def upload_product(self, product_id: str, file_path: Union[str, bytes]) -> Result[Any, Exception]:
+    async def upload_product(self, product_id: str, file_path: Union[str, bytes]) -> Result[DTO.ProductUploadResponseDTO, Exception]:
         """
         POST /products/{product_id}/upload
 
-        Uploads a file and links it to the given product. The file content is
-        not processed by the system but can be accessed via the product's
-        metadata for custom handling.
+        Queues a file for background ingestion linked to the given product.
 
         Args:
             product_id: Unique identifier of the product.
-            file_path: Path to the file to upload.
+            file_path: Path to the file to upload, or raw bytes.
 
         Returns:
-            Ok(result_dict) on success, Err(exception) on failure.
+            Ok(ProductUploadResponseDTO) on success, Err(exception) on failure.
         """
         if isinstance(file_path, bytes):
             file_content = file_path
             filename = f"{product_id}_upload"
-            # files = {"file": (filename, file_content)}
-            # return await self._post(f"{self._products_url}/{product_id}/upload", files=files)
         else:
             filename = os.path.basename(file_path)
             with open(file_path, "rb") as file:
                 file_content = file.read()
 
-        files = {"file": (filename, file_content,"application/octet-stream")}
-        return await self._post(url = f"{self._products_url}/{product_id}/upload", files=files,headers={})
+        files = {"file": (filename, file_content, "application/octet-stream")}
+        return self._validated(
+            DTO.ProductUploadResponseDTO,
+            await self._post(url=f"{self._products_url}/{product_id}/upload", files=files, headers={}),
+        )
+
+    async def get_product_tag_details(self, product_id: str) -> Result[List[DTO.CatalogItemXResponseDTO], Exception]:
+        """GET /products/{product_id}/tags/details — Returns full catalog items for each tag."""
+        return self._validated_list(DTO.CatalogItemXResponseDTO, await self._get(f"{self._products_url}/{product_id}/tags/details"))
+
+    async def download_product(self, product_id: str) -> Result[bytes, Exception]:
+        """GET /products/{product_id}/download — Downloads the product file as raw bytes."""
+        try:
+            async with self._client() as c:
+                r = await c.get(f"{self._products_url}/{product_id}/download")
+                r.raise_for_status()
+                return Ok(r.content)
+        except Exception as e:
+            return Err(e)
 
 
     # ── Search  /search ────────────────────────────────────────
@@ -1012,6 +1088,20 @@ class JubClient:
             f"{self._search_url}/observatories", dto.model_dump()
         )
 
+    async def search_services(self, dto: DTO.ServiceQueryDTO) -> Result[List[DTO.ServiceDTO], Exception]:
+        """
+        POST /search/services
+
+        Searches services using the JUB SVC() DSL operator.
+
+        Args:
+            dto: ServiceQueryDTO with DSL query and pagination parameters.
+
+        Returns:
+            Ok(List[ServiceDTO]) on success, Err(exception) on failure.
+        """
+        return self._validated_list(DTO.ServiceDTO, await self._post(f"{self._search_url}/services", dto.model_dump()))
+
     # ── Tasks  /tasks ──────────────────────────────────────────
 
     async def get_task_stats(self) -> Result[DTO.TasksStatsDTO, Exception]:
@@ -1036,6 +1126,10 @@ class JubClient:
         """POST /tasks/{id}/complete — Marks a task done and enables its observatory on success."""
         payload = dto.model_dump() if isinstance(dto, DTO.TaskCompleteDTO) else dto
         return self._validated(DTO.TaskCompleteResponseDTO, await self._post(f"{self._tasks_url}/{task_id}/complete", payload))
+
+    async def retry_task(self, task_id: str) -> Result[bool, Exception]:
+        """PUT /tasks/{task_id}/retry — Retries a failed task (204 No Content)."""
+        return await self._put_no_content(f"{self._tasks_url}/{task_id}/retry", {})
 
     # ── Code / YAML seed  /code ────────────────────────────────
 
@@ -1086,7 +1180,7 @@ class JubClient:
 
     async def list_notifications(
         self, unread_only: bool = False, limit: int = 50
-    ) -> Result[List[Dict], Exception]:
+    ) -> Result[List[DTO.NotificationDTO], Exception]:
         """
         GET /notifications
 
@@ -1097,422 +1191,186 @@ class JubClient:
             limit: Maximum number of notifications to return (default 50).
 
         Returns:
-            Ok(list of notification dicts) on success, Err(exception) on failure.
+            Ok(List[NotificationDTO]) on success, Err(exception) on failure.
         """
-        return await self._get(
-            self._notifications_url,
-            params={"unread_only": unread_only, "limit": limit},
+        return self._validated_list(
+            DTO.NotificationDTO,
+            await self._get(self._notifications_url, params={"unread_only": unread_only, "limit": limit}),
         )
 
-    async def mark_notification_read(
-        self, notification_id: str
-    ) -> Result[Any, Exception]:
+    async def mark_notification_read(self, notification_id: str) -> Result[bool, Exception]:
         """
         PUT /notifications/{notification_id}/read
 
-        Marks a single notification as read.
+        Marks a single notification as read (204 No Content).
 
         Args:
             notification_id: Unique identifier of the notification.
 
         Returns:
-            Ok(None) on success, Err(exception) on failure.
+            Ok(True) on success, Err(exception) on failure.
         """
-        return await self._put(
-            f"{self._notifications_url}/{notification_id}/read", {}
-        )
+        return await self._put_no_content(f"{self._notifications_url}/{notification_id}/read", {})
 
-    async def mark_all_notifications_read(self) -> Result[Dict, Exception]:
+    async def mark_all_notifications_read(self) -> Result[DTO.NotificationReadAllResponseDTO, Exception]:
         """
         PUT /notifications/read-all
 
         Marks all unread notifications as read for the current user.
 
         Returns:
-            Ok({modified: int}) on success, Err(exception) on failure.
+            Ok(NotificationReadAllResponseDTO) on success, Err(exception) on failure.
         """
-        return await self._put(f"{self._notifications_url}/read-all", {})
+        return self._validated(DTO.NotificationReadAllResponseDTO, await self._put(f"{self._notifications_url}/read-all", {}))
 
-    async def clear_read_notifications(self) -> Result[Dict, Exception]:
+    async def clear_read_notifications(self) -> Result[DTO.NotificationClearReadResponseDTO, Exception]:
         """
         DELETE /notifications/clear-read
 
         Deletes all previously read notifications for the current user.
 
         Returns:
-            Ok({deleted: int}) on success, Err(exception) on failure.
+            Ok(NotificationClearReadResponseDTO) on success, Err(exception) on failure.
         """
-        return await self._delete(f"{self._notifications_url}/clear-read")
+        return self._validated(DTO.NotificationClearReadResponseDTO, await self._delete(f"{self._notifications_url}/clear-read"))
 
     # ── Building blocks  /building-blocks ─────────────────────
 
     async def create_building_block(
         self,
         dto: Union[DTO.BuildingBlockCreateDTO, Dict],
-    ) -> Result[Any, Exception]:
-        """
-        POST /building-blocks
-
-        Creates a new building block (a containerised unit of work).
-
-        Args:
-            dto: BuildingBlockCreateDTO instance or plain dict.
-
-        Returns:
-            Ok(BuildingBlockDTO dict) on success, Err(exception) on failure.
-        """
-        payload = (
-            dto.model_dump()
-            if isinstance(dto, DTO.BuildingBlockCreateDTO)
-            else dto
-        )
-        return await self._post(self._building_blocks_url, payload)
+    ) -> Result[DTO.BuildingBlockDTO, Exception]:
+        """POST /building-blocks — Creates a new containerised unit of work."""
+        payload = dto.model_dump() if isinstance(dto, DTO.BuildingBlockCreateDTO) else dto
+        return self._validated(DTO.BuildingBlockDTO, await self._post(self._building_blocks_url, payload))
 
     async def list_building_blocks(
         self, skip: int = 0, limit: int = 100
-    ) -> Result[List[Dict], Exception]:
-        """
-        GET /building-blocks
-
-        Returns a paginated list of building blocks.
-
-        Args:
-            skip: Number of records to skip.
-            limit: Maximum number of records to return.
-
-        Returns:
-            Ok(list of BuildingBlockDTO dicts) on success, Err(exception) on failure.
-        """
-        return await self._get(
-            self._building_blocks_url, params={"skip": skip, "limit": limit}
+    ) -> Result[List[DTO.BuildingBlockDTO], Exception]:
+        """GET /building-blocks — Returns a paginated list of building blocks."""
+        return self._validated_list(
+            DTO.BuildingBlockDTO,
+            await self._get(self._building_blocks_url, params={"skip": skip, "limit": limit}),
         )
 
-    async def get_building_block(
-        self, building_block_id: str
-    ) -> Result[Dict, Exception]:
-        """
-        GET /building-blocks/{building_block_id}
-
-        Returns a single building block by its ID.
-
-        Args:
-            building_block_id: Unique identifier of the building block.
-
-        Returns:
-            Ok(BuildingBlockDTO dict) on success, Err(exception) on failure.
-        """
-        return await self._get(
-            f"{self._building_blocks_url}/{building_block_id}"
-        )
+    async def get_building_block(self, building_block_id: str) -> Result[DTO.BuildingBlockDTO, Exception]:
+        """GET /building-blocks/{id} — Returns a single building block."""
+        return self._validated(DTO.BuildingBlockDTO, await self._get(f"{self._building_blocks_url}/{building_block_id}"))
 
     async def update_building_block(
         self,
         building_block_id: str,
         dto: Union[DTO.BuildingBlockUpdateDTO, Dict],
-    ) -> Result[Any, Exception]:
-        """
-        PATCH /building-blocks/{building_block_id}
+    ) -> Result[DTO.BuildingBlockDTO, Exception]:
+        """PATCH /building-blocks/{id} — Updates mutable fields on a building block."""
+        payload = dto.model_dump() if isinstance(dto, DTO.BuildingBlockUpdateDTO) else dto
+        return self._validated(DTO.BuildingBlockDTO, await self._patch(f"{self._building_blocks_url}/{building_block_id}", payload))
 
-        Updates mutable fields on a building block. Only provided fields are updated.
-
-        Args:
-            building_block_id: Unique identifier of the building block.
-            dto: BuildingBlockUpdateDTO instance or plain dict with fields to update.
-
-        Returns:
-            Ok(updated BuildingBlockDTO dict) on success, Err(exception) on failure.
-        """
-        payload = (
-            dto.model_dump()
-            if isinstance(dto, DTO.BuildingBlockUpdateDTO)
-            else dto
-        )
-        return await self._patch(
-            f"{self._building_blocks_url}/{building_block_id}", payload
-        )
-
-    async def delete_building_block(
-        self, building_block_id: str
-    ) -> Result[Any, Exception]:
-        """
-        DELETE /building-blocks/{building_block_id}
-
-        Deletes a building block. Returns no body (204 No Content).
-
-        Args:
-            building_block_id: Unique identifier of the building block.
-
-        Returns:
-            Ok(None) on success, Err(exception) on failure.
-        """
-        return await self._delete(
-            f"{self._building_blocks_url}/{building_block_id}"
-        )
+    async def delete_building_block(self, building_block_id: str) -> Result[bool, Exception]:
+        """DELETE /building-blocks/{id} — Deletes a building block (204 No Content)."""
+        return await self._delete_no_content(f"{self._building_blocks_url}/{building_block_id}")
 
     # ── Patterns  /patterns ────────────────────────────────────
 
     async def create_pattern(
         self,
         dto: Union[DTO.PatternCreateDTO, Dict],
-    ) -> Result[Any, Exception]:
-        """
-        POST /patterns
+    ) -> Result[DTO.PatternDTO, Exception]:
+        """POST /patterns — Creates a new execution pattern for a building block."""
+        payload = dto.model_dump() if isinstance(dto, DTO.PatternCreateDTO) else dto
+        return self._validated(DTO.PatternDTO, await self._post(self._patterns_url, payload))
 
-        Creates a new pattern that defines how a building block is executed
-        (parallelism, load balancing, task category).
-
-        Args:
-            dto: PatternCreateDTO instance or plain dict.
-
-        Returns:
-            Ok(PatternDTO dict) on success, Err(exception) on failure.
-        """
-        payload = (
-            dto.model_dump() if isinstance(dto, DTO.PatternCreateDTO) else dto
-        )
-        return await self._post(self._patterns_url, payload)
-
-    async def list_patterns(
-        self, skip: int = 0, limit: int = 100
-    ) -> Result[List[Dict], Exception]:
-        """
-        GET /patterns
-
-        Returns a paginated list of patterns.
-
-        Args:
-            skip: Number of records to skip.
-            limit: Maximum number of records to return.
-
-        Returns:
-            Ok(list of PatternDTO dicts) on success, Err(exception) on failure.
-        """
-        return await self._get(
-            self._patterns_url, params={"skip": skip, "limit": limit}
+    async def list_patterns(self, skip: int = 0, limit: int = 100) -> Result[List[DTO.PatternDTO], Exception]:
+        """GET /patterns — Returns a paginated list of patterns."""
+        return self._validated_list(
+            DTO.PatternDTO,
+            await self._get(self._patterns_url, params={"skip": skip, "limit": limit}),
         )
 
-    async def get_pattern(self, pattern_id: str) -> Result[Dict, Exception]:
-        """
-        GET /patterns/{pattern_id}
-
-        Returns a single pattern by its ID.
-
-        Args:
-            pattern_id: Unique identifier of the pattern.
-
-        Returns:
-            Ok(PatternDTO dict) on success, Err(exception) on failure.
-        """
-        return await self._get(f"{self._patterns_url}/{pattern_id}")
+    async def get_pattern(self, pattern_id: str) -> Result[DTO.PatternDTO, Exception]:
+        """GET /patterns/{id} — Returns a single pattern."""
+        return self._validated(DTO.PatternDTO, await self._get(f"{self._patterns_url}/{pattern_id}"))
 
     async def update_pattern(
         self,
         pattern_id: str,
         dto: Union[DTO.PatternUpdateDTO, Dict],
-    ) -> Result[Any, Exception]:
-        """
-        PATCH /patterns/{pattern_id}
+    ) -> Result[DTO.PatternDTO, Exception]:
+        """PATCH /patterns/{id} — Updates mutable fields on a pattern."""
+        payload = dto.model_dump() if isinstance(dto, DTO.PatternUpdateDTO) else dto
+        return self._validated(DTO.PatternDTO, await self._patch(f"{self._patterns_url}/{pattern_id}", payload))
 
-        Updates mutable fields on a pattern. Only provided fields are updated.
-
-        Args:
-            pattern_id: Unique identifier of the pattern.
-            dto: PatternUpdateDTO instance or plain dict with fields to update.
-
-        Returns:
-            Ok(updated PatternDTO dict) on success, Err(exception) on failure.
-        """
-        payload = (
-            dto.model_dump() if isinstance(dto, DTO.PatternUpdateDTO) else dto
-        )
-        return await self._patch(f"{self._patterns_url}/{pattern_id}", payload)
-
-    async def delete_pattern(self, pattern_id: str) -> Result[Any, Exception]:
-        """
-        DELETE /patterns/{pattern_id}
-
-        Deletes a pattern. Returns no body (204 No Content).
-
-        Args:
-            pattern_id: Unique identifier of the pattern.
-
-        Returns:
-            Ok(None) on success, Err(exception) on failure.
-        """
-        return await self._delete(f"{self._patterns_url}/{pattern_id}")
+    async def delete_pattern(self, pattern_id: str) -> Result[bool, Exception]:
+        """DELETE /patterns/{id} — Deletes a pattern (204 No Content)."""
+        return await self._delete_no_content(f"{self._patterns_url}/{pattern_id}")
 
     # ── Stages  /stages ────────────────────────────────────────
 
     async def create_stage(
         self,
         dto: Union[DTO.StageCreateDTO, Dict],
-    ) -> Result[Any, Exception]:
-        """
-        POST /stages
+    ) -> Result[DTO.StageDTO, Exception]:
+        """POST /stages — Creates a new processing step in a workflow (source → sink)."""
+        payload = dto.model_dump() if isinstance(dto, DTO.StageCreateDTO) else dto
+        return self._validated(DTO.StageDTO, await self._post(self._stages_url, payload))
 
-        Creates a new stage representing a single processing step in a workflow
-        (source -> transformation -> sink).
-
-        Args:
-            dto: StageCreateDTO instance or plain dict.
-
-        Returns:
-            Ok(StageDTO dict) on success, Err(exception) on failure.
-        """
-        payload = (
-            dto.model_dump() if isinstance(dto, DTO.StageCreateDTO) else dto
-        )
-        return await self._post(self._stages_url, payload)
-
-    async def list_stages(
-        self, skip: int = 0, limit: int = 100
-    ) -> Result[List[Dict], Exception]:
-        """
-        GET /stages
-
-        Returns a paginated list of stages.
-
-        Args:
-            skip: Number of records to skip.
-            limit: Maximum number of records to return.
-
-        Returns:
-            Ok(list of StageDTO dicts) on success, Err(exception) on failure.
-        """
-        return await self._get(
-            self._stages_url, params={"skip": skip, "limit": limit}
+    async def list_stages(self, skip: int = 0, limit: int = 100) -> Result[List[DTO.StageDTO], Exception]:
+        """GET /stages — Returns a paginated list of stages."""
+        return self._validated_list(
+            DTO.StageDTO,
+            await self._get(self._stages_url, params={"skip": skip, "limit": limit}),
         )
 
-    async def get_stage(self, stage_id: str) -> Result[Dict, Exception]:
-        """
-        GET /stages/{stage_id}
-
-        Returns a single stage by its ID.
-
-        Args:
-            stage_id: Unique identifier of the stage.
-
-        Returns:
-            Ok(StageDTO dict) on success, Err(exception) on failure.
-        """
-        return await self._get(f"{self._stages_url}/{stage_id}")
+    async def get_stage(self, stage_id: str) -> Result[DTO.StageDTO, Exception]:
+        """GET /stages/{id} — Returns a single stage."""
+        return self._validated(DTO.StageDTO, await self._get(f"{self._stages_url}/{stage_id}"))
 
     async def update_stage(
         self,
         stage_id: str,
         dto: Union[DTO.StageUpdateDTO, Dict],
-    ) -> Result[Any, Exception]:
-        """
-        PATCH /stages/{stage_id}
+    ) -> Result[DTO.StageDTO, Exception]:
+        """PATCH /stages/{id} — Updates mutable fields on a stage."""
+        payload = dto.model_dump() if isinstance(dto, DTO.StageUpdateDTO) else dto
+        return self._validated(DTO.StageDTO, await self._patch(f"{self._stages_url}/{stage_id}", payload))
 
-        Updates mutable fields on a stage. Only provided fields are updated.
-
-        Args:
-            stage_id: Unique identifier of the stage.
-            dto: StageUpdateDTO instance or plain dict with fields to update.
-
-        Returns:
-            Ok(updated StageDTO dict) on success, Err(exception) on failure.
-        """
-        payload = (
-            dto.model_dump() if isinstance(dto, DTO.StageUpdateDTO) else dto
-        )
-        return await self._patch(f"{self._stages_url}/{stage_id}", payload)
-
-    async def delete_stage(self, stage_id: str) -> Result[Any, Exception]:
-        """
-        DELETE /stages/{stage_id}
-
-        Deletes a stage. Returns no body (204 No Content).
-
-        Args:
-            stage_id: Unique identifier of the stage.
-
-        Returns:
-            Ok(None) on success, Err(exception) on failure.
-        """
-        return await self._delete(f"{self._stages_url}/{stage_id}")
+    async def delete_stage(self, stage_id: str) -> Result[bool, Exception]:
+        """DELETE /stages/{id} — Deletes a stage (204 No Content)."""
+        return await self._delete_no_content(f"{self._stages_url}/{stage_id}")
 
     # ── Workflows  /workflows ──────────────────────────────────
 
     async def create_workflow(
         self,
         dto: Union[DTO.WorkflowCreateDTO, Dict],
-    ) -> Result[Any, Exception]:
-        """
-        POST /workflows
+    ) -> Result[DTO.WorkflowDTO, Exception]:
+        """POST /workflows — Creates a workflow from an ordered list of stages."""
+        payload = dto.model_dump() if isinstance(dto, DTO.WorkflowCreateDTO) else dto
+        return self._validated(DTO.WorkflowDTO, await self._post(self._workflows_url, payload))
 
-        Creates a new workflow by assembling an ordered sequence of stages.
-
-        Args:
-            dto: WorkflowCreateDTO instance or plain dict.
-
-        Returns:
-            Ok(WorkflowDTO dict) on success, Err(exception) on failure.
-        """
-        payload = (
-            dto.model_dump() if isinstance(dto, DTO.WorkflowCreateDTO) else dto
-        )
-        return await self._post(self._workflows_url, payload)
-
-    async def list_workflows(
-        self, skip: int = 0, limit: int = 100
-    ) -> Result[List[Dict], Exception]:
-        """
-        GET /workflows
-
-        Returns a paginated list of workflows.
-
-        Args:
-            skip: Number of records to skip.
-            limit: Maximum number of records to return.
-
-        Returns:
-            Ok(list of WorkflowDTO dicts) on success, Err(exception) on failure.
-        """
-        return await self._get(
-            self._workflows_url, params={"skip": skip, "limit": limit}
+    async def list_workflows(self, skip: int = 0, limit: int = 100) -> Result[List[DTO.WorkflowDTO], Exception]:
+        """GET /workflows — Returns a paginated list of workflows."""
+        return self._validated_list(
+            DTO.WorkflowDTO,
+            await self._get(self._workflows_url, params={"skip": skip, "limit": limit}),
         )
 
-    async def get_workflow(self, workflow_id: str) -> Result[Dict, Exception]:
-        """
-        GET /workflows/{workflow_id}
-
-        Returns a single workflow by its ID.
-
-        Args:
-            workflow_id: Unique identifier of the workflow.
-
-        Returns:
-            Ok(WorkflowDTO dict) on success, Err(exception) on failure.
-        """
-        return await self._get(f"{self._workflows_url}/{workflow_id}")
+    async def get_workflow(self, workflow_id: str) -> Result[DTO.WorkflowDTO, Exception]:
+        """GET /workflows/{id} — Returns a single workflow."""
+        return self._validated(DTO.WorkflowDTO, await self._get(f"{self._workflows_url}/{workflow_id}"))
 
     async def update_workflow(
         self,
         workflow_id: str,
         dto: Union[DTO.WorkflowUpdateDTO, Dict],
-    ) -> Result[Any, Exception]:
-        """
-        PATCH /workflows/{workflow_id}
-
-        Updates mutable fields on a workflow. Only provided fields are updated.
-
-        Args:
-            workflow_id: Unique identifier of the workflow.
-            dto: WorkflowUpdateDTO instance or plain dict with fields to update.
-
-        Returns:
-            Ok(updated WorkflowDTO dict) on success, Err(exception) on failure.
-        """
-        payload = (
-            dto.model_dump() if isinstance(dto, DTO.WorkflowUpdateDTO) else dto
-        )
-        return await self._patch(f"{self._workflows_url}/{workflow_id}", payload)
+    ) -> Result[DTO.WorkflowDTO, Exception]:
+        """PATCH /workflows/{id} — Updates mutable fields on a workflow."""
+        payload = dto.model_dump() if isinstance(dto, DTO.WorkflowUpdateDTO) else dto
+        return self._validated(DTO.WorkflowDTO, await self._patch(f"{self._workflows_url}/{workflow_id}", payload))
 
     async def delete_workflow(
         self, workflow_id: str, cascade: bool = False
-    ) -> Result[Dict, Exception]:
+    ) -> Result[DTO.WorkflowDeleteResponseDTO, Exception]:
         """
         DELETE /workflows/{workflow_id}
 
@@ -1523,130 +1381,62 @@ class JubClient:
             cascade: When True, cascade-deletes the workflow's stages.
 
         Returns:
-            Ok(deletion result dict) on success, Err(exception) on failure.
+            Ok(WorkflowDeleteResponseDTO) on success, Err(exception) on failure.
         """
-        try:
-            async with self._client() as c:
-                r = await c.delete(
-                    f"{self._workflows_url}/{workflow_id}",
-                    params={"cascade": cascade},
-                )
-                r.raise_for_status()
-                return Ok(r.json())
-        except Exception as e:
-            return Err(e)
+        return self._validated(
+            DTO.WorkflowDeleteResponseDTO,
+            await self._delete(f"{self._workflows_url}/{workflow_id}", params={"cascade": cascade}),
+        )
 
     # ── Services  /services ────────────────────────────────────
 
     async def create_service(
         self,
         dto: Union[DTO.ServiceCreateDTO, Dict],
-    ) -> Result[Any, Exception]:
-        """
-        POST /services
-
-        Creates a new service and optionally attaches an existing workflow.
-
-        Args:
-            dto: ServiceCreateDTO instance or plain dict.
-
-        Returns:
-            Ok(ServiceDTO dict) on success, Err(exception) on failure.
-        """
-        payload = (
-            dto.model_dump() if isinstance(dto, DTO.ServiceCreateDTO) else dto
-        )
-        return await self._post(self._services_url, payload)
+    ) -> Result[DTO.ServiceDTO, Exception]:
+        """POST /services — Creates a new service with an optional workflow reference."""
+        payload = dto.model_dump() if isinstance(dto, DTO.ServiceCreateDTO) else dto
+        return self._validated(DTO.ServiceDTO, await self._post(self._services_url, payload))
 
     async def index_service(
         self,
         dto: Union[DTO.ServiceIndexDTO, Dict],
-    ) -> Result[Any, Exception]:
+    ) -> Result[DTO.ServiceIndexResponseDTO, Exception]:
         """
         POST /services/index
 
         One-shot endpoint that creates the full Service -> Workflow -> Stages ->
-        Patterns -> BuildingBlocks tree in a single request. At every level you
-        can provide inline definitions or reference existing IDs.
+        Patterns -> BuildingBlocks tree in a single request.
 
         Args:
             dto: ServiceIndexDTO instance or plain dict.
 
         Returns:
-            Ok(ServiceIndexResponseDTO dict) on success, Err(exception) on failure.
+            Ok(ServiceIndexResponseDTO) on success, Err(exception) on failure.
         """
-        payload = (
-            dto.model_dump() if isinstance(dto, DTO.ServiceIndexDTO) else dto
-        )
-        return await self._post(f"{self._services_url}/index", payload)
+        payload = dto.model_dump() if isinstance(dto, DTO.ServiceIndexDTO) else dto
+        return self._validated(DTO.ServiceIndexResponseDTO, await self._post(f"{self._services_url}/index", payload))
 
-    async def list_services(
-        self, skip: int = 0, limit: int = 100
-    ) -> Result[List[Dict], Exception]:
-        """
-        GET /services
-
-        Returns a paginated list of services.
-
-        Args:
-            skip: Number of records to skip.
-            limit: Maximum number of records to return.
-
-        Returns:
-            Ok(list of ServiceDTO dicts) on success, Err(exception) on failure.
-        """
-        return await self._get(
-            self._services_url, params={"skip": skip, "limit": limit}
+    async def list_services(self, skip: int = 0, limit: int = 100) -> Result[List[DTO.ServiceDTO], Exception]:
+        """GET /services — Returns a paginated list of services."""
+        return self._validated_list(
+            DTO.ServiceDTO,
+            await self._get(self._services_url, params={"skip": skip, "limit": limit}),
         )
 
-    async def get_service(self, service_id: str) -> Result[Dict, Exception]:
-        """
-        GET /services/{service_id}
-
-        Returns a single service by its ID.
-
-        Args:
-            service_id: Unique identifier of the service.
-
-        Returns:
-            Ok(ServiceDTO dict) on success, Err(exception) on failure.
-        """
-        return await self._get(f"{self._services_url}/{service_id}")
+    async def get_service(self, service_id: str) -> Result[DTO.ServiceDTO, Exception]:
+        """GET /services/{id} — Returns a single service."""
+        return self._validated(DTO.ServiceDTO, await self._get(f"{self._services_url}/{service_id}"))
 
     async def update_service(
         self,
         service_id: str,
         dto: Union[DTO.ServiceUpdateDTO, Dict],
-    ) -> Result[Any, Exception]:
-        """
-        PATCH /services/{service_id}
+    ) -> Result[DTO.ServiceDTO, Exception]:
+        """PATCH /services/{id} — Updates mutable fields on a service."""
+        payload = dto.model_dump() if isinstance(dto, DTO.ServiceUpdateDTO) else dto
+        return self._validated(DTO.ServiceDTO, await self._patch(f"{self._services_url}/{service_id}", payload))
 
-        Updates mutable fields on a service. Only provided fields are updated.
-
-        Args:
-            service_id: Unique identifier of the service.
-            dto: ServiceUpdateDTO instance or plain dict with fields to update.
-
-        Returns:
-            Ok(updated ServiceDTO dict) on success, Err(exception) on failure.
-        """
-        payload = (
-            dto.model_dump() if isinstance(dto, DTO.ServiceUpdateDTO) else dto
-        )
-        return await self._patch(f"{self._services_url}/{service_id}", payload)
-
-    async def delete_service(
-        self, service_id: str
-    ) -> Result[Dict, Exception]:
-        """
-        DELETE /services/{service_id}
-
-        Deletes a service and returns a summary of cascade-deleted entities.
-
-        Args:
-            service_id: Unique identifier of the service.
-
-        Returns:
-            Ok(ServiceDeleteResponseDTO dict) on success, Err(exception) on failure.
-        """
-        return await self._delete(f"{self._services_url}/{service_id}")
+    async def delete_service(self, service_id: str) -> Result[DTO.ServiceDeleteResponseDTO, Exception]:
+        """DELETE /services/{id} — Deletes a service and returns a cascade summary."""
+        return self._validated(DTO.ServiceDeleteResponseDTO, await self._delete(f"{self._services_url}/{service_id}"))
