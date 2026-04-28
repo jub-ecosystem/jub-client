@@ -14,8 +14,8 @@ from jub.client.v2 import JubClientBuilder
 import jub.dto.v2 as DTO
 import jub.enums as ENUM
 
-# API_URL  = "http://localhost:5000"
-API_URL  = "https://apix.tamps.cinvestav.mx/jub"
+API_URL  = "http://localhost:5000"
+# API_URL  = "https://apix.tamps.cinvestav.mx/jub"
 USERNAME = "invitado"
 PASSWORD = "invitado"
 
