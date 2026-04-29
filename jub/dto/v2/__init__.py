@@ -185,10 +185,13 @@ class SignUpDTO(BaseModel):
     """
 
     username: str
+    first_name: str = Field("", description="Optional first name of the user.")  # Example of using Field for description
+    last_name: str = Field("", description="Optional last name of the user.")  # Example of using Field for description
     email: str
     password: str
-    first_name: str = ""
-    last_name: str = ""
+    profile_photo:str = Field("", description="Optional URL of the user's profile photo.")
+    scope: Optional[str] = Field("jub", description="Optional scope of the user's access (e.g. 'admin', 'analyst').")
+    expiration: Optional[str] = Field("1y", description="Optional ISO 8601 datetime string indicating when the user's access expires.")
 
 
 class AuthAttemptDTO(BaseModel):
@@ -274,7 +277,7 @@ class CatalogItemAliasCreateDTO(BaseModel):
         value_type: Type of the alias value (STRING, NUMBER, BOOLEAN, DATETIME).
         description: Optional description for the alias.
     """
-
+    alias_id: Optional[str] = Field(None, description="Optional pre-defined ID for the catalog item alias. If not provided, a random UUID is generated.")
     value: str
     value_type: str
     description: str = ""
@@ -297,11 +300,12 @@ class CatalogItemCreateDTO(BaseModel):
         children: Nested child items for hierarchical catalogs.
     """
 
+    catalog_item_id:Optional[str] = Field(None, description="Optional pre-defined ID for the catalog item. If not provided, a random UUID is generated.")
     name: str
     value: str
     code: int
     value_type: str
-    description: str = ""
+    description: Optional[str] = Field("", description="Optional description providing context about the catalog item.")
     temporal_value: Optional[str] = None
     aliases: List[CatalogItemAliasCreateDTO] = Field(default_factory=list)
     children: List["CatalogItemCreateDTO"] = Field(default_factory=list)
@@ -324,6 +328,7 @@ class CatalogCreateDTO(BaseModel):
         items: List of catalog items to create together with the catalog.
     """
 
+    catalog_id:Optional[str] = Field(None, description="Optional pre-defined ID for the catalog. If not provided, a random UUID is generated.")
     name: str
     value: str
     catalog_type: str
@@ -346,14 +351,15 @@ class CatalogItemStandaloneCreateDTO(BaseModel):
         parent_item_id: Optional ID of a parent item for hierarchical placement.
     """
 
+    catalog_item_id: Optional[str] = Field(None, description="Optional pre-defined ID for the catalog item. If not provided, a random UUID is generated.")
     catalog_id: str
     name: str
     value: str
     code: int
     value_type: str
-    description: str = ""
-    temporal_value: Optional[str] = None
-    parent_item_id: Optional[str] = None
+    description: str = Field("", description="Optional description providing context about the catalog item.")
+    temporal_value: Optional[str] = Field(None, description="Optional ISO 8601 datetime string for temporal items.")
+    parent_item_id: Optional[str] = Field(None, description="Optional ID of a parent item for hierarchical placement. If provided, this item will be linked as a child to the specified parent item.")
 
 
 class CatalogItemUpdateDTO(BaseModel):
@@ -475,6 +481,7 @@ class ObservatoryCreateDTO(BaseModel):
         image_url: Optional URL of a representative image.
     """
 
+    observatory_id:Optional[str] = Field(None, description="Optional pre-defined ID for the observatory. If not provided, a random UUID is generated.")
     title: str
     description: str = ""
     image_url: str = ""
@@ -736,13 +743,14 @@ class UserProfileDTO(BaseModel):
     """Response for GET /users/me."""
     user_id: str
     username: str
-    fullname: str = ""
-    first_name: str = ""
-    last_name: str = ""
+    fullname: str = Field("", description="Full name of the user, combining first and last name if available.")
+    first_name: str = Field("", description="Optional first name of the user.")
+    last_name: str = Field("", description="Optional last name of the user.")
     email: str
-    is_disabled: bool = False
-    created_at: str = ""
-    updated_at: str = ""
+    settings: UserPreferencesDTO = Field(default_factory=UserPreferencesDTO)
+    created_at: str = Field("", description="ISO 8601 datetime string indicating when the user account was created.")
+    updated_at: str = Field("", description="ISO 8601 datetime string indicating when the user account was last updated.")
+    is_disabled: bool = Field(False, description="Whether the user account is disabled.")
 
 
 class AuthResponseDTO(BaseModel):
