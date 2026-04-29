@@ -154,9 +154,10 @@ class JubClient:
     def _client(self,headers:Dict[str,str]=None) -> httpx.AsyncClient:
         return httpx.AsyncClient(headers=self._headers(headers), verify=False)
 
-    async def _get(self, url: str, params: Dict = None) -> Result[Any, Exception]:
+    async def _get(self, url: str, params: Dict = None,headers:Dict[str,str]=None) -> Result[Any, Exception]:
         try:
-            async with self._client() as c:
+            # self._headers
+            async with self._client(headers=self._headers(headers)) as c:
                 r = await c.get(url, params=params)
                 r.raise_for_status()
                 return Ok(r.json())
@@ -252,7 +253,7 @@ class JubClient:
         except Exception as e:
             return Err(e)
 
-    async def signup(self, dto: DTO.SignUpDTO) -> Result[DTO.AuthResponseDTO, Exception]:
+    async def signup(self, dto: DTO.SignUpDTO) -> Result[DTO.UserProfileDTO, Exception]:
         """
         POST /users/signup
 
@@ -262,10 +263,10 @@ class JubClient:
             dto: User registration payload.
 
         Returns:
-            Ok(AuthResponseDTO) on success, Err(exception) on failure.
+            Ok(UserProfileDTO) on success, Err(exception) on failure.
         """
-        return self._validated(DTO.AuthResponseDTO, await self._post(f"{self._users_url}/signup", dto.model_dump()))
-
+        return self._validated(DTO.UserProfileDTO, await self._post(f"{self._users_url}/signup", dto.model_dump()))
+    
     @check_auth
     async def get_current_user(self) -> Result[DTO.UserProfileDTO, Exception]:
         """
