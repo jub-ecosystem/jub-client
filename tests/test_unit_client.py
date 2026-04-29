@@ -137,7 +137,7 @@ async def test_create_observatory(client):
     assert obs.title == "Climate Watch"
     client._post.assert_awaited_once_with(
         "http://localhost:5000/api/v2/observatories",
-        {"title": "Climate Watch", "description": "Global sensors", "image_url": ""},
+        {"observatory_id":None,"title": "Climate Watch", "description": "Global sensors", "image_url": ""},
     )
 
 
