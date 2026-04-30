@@ -138,6 +138,35 @@ async def test_create_catalog_and_get(client: JubClient):
 
 
 @pytest.mark.asyncio
+async def test_create_catalogs_bulk_and_link(client:JubClient):
+    from uuid import uuid4
+    iid = uuid4().hex[:6]
+    observatory_id = f"obs-{iid}-test"
+    result = await client.create_observatory(
+        dto= DTO.ObservatoryCreateDTO(
+            observatory_id = observatory_id,
+            title          = "Observatorio de Test para Catalogos Bulk",
+            description    = "Observatorio para test_create_catalogs_bulk_and_link",
+            image_url      = "",
+        )
+    )
+    assert result.is_ok, f"Failed to create observatory {observatory_id}: {result.unwrap_err()}"
+    result = await client.create_bulk_catalogs_and_link_from_json(
+        observatory_id=observatory_id,
+        data=[
+            DTO.CatalogCreateDTO(
+                catalog_id   = f"cat-test-{iid}",
+                catalog_type = "INTEREST",
+                description  = "test description",
+                items        = [],
+                name         = "catalog-test",
+                value        = "SPATIAL"
+            ).model_dump()
+        ]
+    )
+    assert result.is_ok, f"Failed to create catalogs and link to {observatory_id}"
+
+@pytest.mark.asyncio
 async def test_list_catalogs(client: JubClient):
     result = await client.list_catalogs()
     assert result.is_ok, f"list_catalogs failed: {result.unwrap_err()}"
@@ -266,7 +295,7 @@ async def test_ingest_and_query_records(client: JubClient):
     ]
     ingest_r = await client.ingest_records(src_id, records)
     assert ingest_r.is_ok, f"ingest_records failed: {ingest_r.unwrap_err()}"
-    assert ingest_r.unwrap()["inserted"] == 3
+    assert ingest_r.unwrap().inserted == 3
 
     # Clean up
     await client.delete_data_source(src_id)
@@ -414,7 +443,7 @@ async def test_happy_path_observatory_provisioning(client: JubClient):
         ],
     )
     assert ingest_r.is_ok, f"ingest_records failed: {ingest_r.unwrap_err()}"
-    assert ingest_r.unwrap()["inserted"] == 1
+    assert ingest_r.unwrap().inserted == 1
 
     # ── 6. Complete task → enables observatory ────────────────
     complete_r = await client.complete_task(
