@@ -8,3 +8,4 @@ scripts/
 .claude
 CLAUDE.md
 .cache
+coverage.*
