@@ -282,7 +282,6 @@ class CatalogItemAliasCreateDTO(BaseModel):
     value_type: str
     description: str = ""
 
-
 class CatalogItemCreateDTO(BaseModel):
     """
     Payload for creating a catalog item within a new catalog.
