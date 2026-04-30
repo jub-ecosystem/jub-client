@@ -15,6 +15,16 @@ pipx install poetry
     [pipx](https://pipx.pypa.io/stable/) installs CLI tools in isolated environments so they don't interfere with your project dependencies.
 
 ---
+## Install JUB Client
+Please note that Jub Client is under active development and may not be available on PyPI yet. To install the latest version, you can use the Test PyPI repository:
+
+```bash
+pip install -i https://test.pypi.org/simple/ jub
+```
+
+⚠️ Always try to use the latest version available on https://test.pypi.org/project/jub/ to ensure you have the latest features and bug fixes.
+
+---
 
 ## Clone the repository
 
