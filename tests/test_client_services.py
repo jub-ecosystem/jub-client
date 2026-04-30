@@ -49,20 +49,20 @@ async def test_create_and_delete_building_block(client):
     )
     assert result.is_ok, f"create_building_block failed: {result.unwrap_err()}"
     bb = result.unwrap()
-    assert bb["building_block_id"]
-    assert bb["name"] == "Integration Test BB"
-    bb_id = bb["building_block_id"]
+    assert bb.building_block_id
+    assert bb.name == "Integration Test BB"
+    bb_id = bb.building_block_id
 
     # List
     list_r = await client.list_building_blocks(skip=0, limit=100)
     assert list_r.is_ok
-    ids = [b["building_block_id"] for b in list_r.unwrap()]
+    ids = [b.building_block_id for b in list_r.unwrap()]
     assert bb_id in ids
 
     # Get
     get_r = await client.get_building_block(bb_id)
     assert get_r.is_ok
-    assert get_r.unwrap()["building_block_id"] == bb_id
+    assert get_r.unwrap().building_block_id == bb_id
 
     # Update
     upd_r = await client.update_building_block(
@@ -70,7 +70,7 @@ async def test_create_and_delete_building_block(client):
         DTO.BuildingBlockUpdateDTO(description="Updated by integration test"),
     )
     assert upd_r.is_ok
-    assert upd_r.unwrap()["description"] == "Updated by integration test"
+    assert upd_r.unwrap().description == "Updated by integration test"
 
     # Delete — API returns 204 (no body); client result is Err(JSONDecodeError) but the resource is deleted
     await client.delete_building_block(bb_id)
@@ -86,7 +86,7 @@ async def test_create_and_delete_pattern(client):
         DTO.BuildingBlockCreateDTO(name="BB for Pattern Test", command="run.sh", image="alpine:3")
     )
     assert bb_r.is_ok
-    bb_id = bb_r.unwrap()["building_block_id"]
+    bb_id = bb_r.unwrap().building_block_id
 
     # Create pattern
     result = await client.create_pattern(
@@ -101,20 +101,20 @@ async def test_create_and_delete_pattern(client):
     )
     assert result.is_ok, f"create_pattern failed: {result.unwrap_err()}"
     pat = result.unwrap()
-    assert pat["pattern_id"]
-    assert pat["building_block_id"] == bb_id
-    pat_id = pat["pattern_id"]
+    assert pat.pattern_id
+    assert pat.building_block_id == bb_id
+    pat_id = pat.pattern_id
 
     # List
     list_r = await client.list_patterns(skip=0, limit=100)
     assert list_r.is_ok
-    ids = [p["pattern_id"] for p in list_r.unwrap()]
+    ids = [p.pattern_id for p in list_r.unwrap()]
     assert pat_id in ids
 
     # Get
     get_r = await client.get_pattern(pat_id)
     assert get_r.is_ok
-    assert get_r.unwrap()["pattern_id"] == pat_id
+    assert get_r.unwrap().pattern_id == pat_id
 
     # Update
     upd_r = await client.update_pattern(
@@ -122,7 +122,7 @@ async def test_create_and_delete_pattern(client):
         DTO.PatternUpdateDTO(workers=4),
     )
     assert upd_r.is_ok
-    assert upd_r.unwrap()["workers"] == 4
+    assert upd_r.unwrap().workers == 4
 
     # Cleanup — both return 204 (no body); resource is deleted even though client returns Err
     await client.delete_pattern(pat_id)
@@ -145,20 +145,20 @@ async def test_create_and_delete_stage(client):
     )
     assert result.is_ok, f"create_stage failed: {result.unwrap_err()}"
     stage = result.unwrap()
-    assert stage["stage_id"]
-    assert stage["name"] == "Integration Test Stage"
-    stage_id = stage["stage_id"]
+    assert stage.stage_id
+    assert stage.name == "Integration Test Stage"
+    stage_id = stage.stage_id
 
     # List
     list_r = await client.list_stages(skip=0, limit=100)
     assert list_r.is_ok
-    ids = [s["stage_id"] for s in list_r.unwrap()]
+    ids = [s.stage_id for s in list_r.unwrap()]
     assert stage_id in ids
 
     # Get
     get_r = await client.get_stage(stage_id)
     assert get_r.is_ok
-    assert get_r.unwrap()["stage_id"] == stage_id
+    assert get_r.unwrap().stage_id == stage_id
 
     # Update
     upd_r = await client.update_stage(
@@ -166,7 +166,7 @@ async def test_create_and_delete_stage(client):
         DTO.StageUpdateDTO(endpoint="http://stage-test:9090"),
     )
     assert upd_r.is_ok
-    assert upd_r.unwrap()["endpoint"] == "http://stage-test:9090"
+    assert upd_r.unwrap().endpoint == "http://stage-test:9090"
 
     # Delete — API returns 204 (no body); resource is deleted even though client returns Err
     await client.delete_stage(stage_id)
@@ -185,8 +185,8 @@ async def test_create_and_delete_workflow(client):
         DTO.StageCreateDTO(name="Stage B", source="s3://mid", sink="s3://out", endpoint="http://b:8080")
     )
     assert s1_r.is_ok and s2_r.is_ok
-    s1_id = s1_r.unwrap()["stage_id"]
-    s2_id = s2_r.unwrap()["stage_id"]
+    s1_id = s1_r.unwrap().stage_id
+    s2_id = s2_r.unwrap().stage_id
 
     # Create workflow
     result = await client.create_workflow(
@@ -194,21 +194,21 @@ async def test_create_and_delete_workflow(client):
     )
     assert result.is_ok, f"create_workflow failed: {result.unwrap_err()}"
     wf = result.unwrap()
-    assert wf["workflow_id"]
-    assert s1_id in wf["stage_ids"]
-    assert s2_id in wf["stage_ids"]
-    wf_id = wf["workflow_id"]
+    assert wf.workflow_id
+    assert s1_id in wf.stage_ids
+    assert s2_id in wf.stage_ids
+    wf_id = wf.workflow_id
 
     # List
     list_r = await client.list_workflows(skip=0, limit=100)
     assert list_r.is_ok
-    ids = [w["workflow_id"] for w in list_r.unwrap()]
+    ids = [w.workflow_id for w in list_r.unwrap()]
     assert wf_id in ids
 
     # Get
     get_r = await client.get_workflow(wf_id)
     assert get_r.is_ok
-    assert get_r.unwrap()["workflow_id"] == wf_id
+    assert get_r.unwrap().workflow_id == wf_id
 
     # Update
     upd_r = await client.update_workflow(
@@ -216,7 +216,7 @@ async def test_create_and_delete_workflow(client):
         DTO.WorkflowUpdateDTO(name="Updated Integration Workflow"),
     )
     assert upd_r.is_ok
-    assert upd_r.unwrap()["name"] == "Updated Integration Workflow"
+    assert upd_r.unwrap().name == "Updated Integration Workflow"
 
     # Delete workflow (cascade also removes stages)
     del_r = await client.delete_workflow(wf_id, cascade=True)
@@ -233,7 +233,7 @@ async def test_create_and_delete_service(client):
         DTO.WorkflowCreateDTO(name="Workflow for Service Test")
     )
     assert wf_r.is_ok
-    wf_id = wf_r.unwrap()["workflow_id"]
+    wf_id = wf_r.unwrap().workflow_id
 
     # Create service
     result = await client.create_service(
@@ -246,20 +246,20 @@ async def test_create_and_delete_service(client):
     )
     assert result.is_ok, f"create_service failed: {result.unwrap_err()}"
     svc = result.unwrap()
-    assert svc["service_id"]
-    assert svc["workflow_id"] == wf_id
-    svc_id = svc["service_id"]
+    assert svc.service_id
+    assert svc.workflow_id == wf_id
+    svc_id = svc.service_id
 
     # List
     list_r = await client.list_services(skip=0, limit=100)
     assert list_r.is_ok
-    ids = [s["service_id"] for s in list_r.unwrap()]
+    ids = [s.service_id for s in list_r.unwrap()]
     assert svc_id in ids
 
     # Get
     get_r = await client.get_service(svc_id)
     assert get_r.is_ok
-    assert get_r.unwrap()["service_id"] == svc_id
+    assert get_r.unwrap().service_id == svc_id
 
     # Update
     upd_r = await client.update_service(
@@ -267,13 +267,13 @@ async def test_create_and_delete_service(client):
         DTO.ServiceUpdateDTO(public=True),
     )
     assert upd_r.is_ok
-    assert upd_r.unwrap()["public"] is True
+    assert upd_r.unwrap().public is True
 
     # Delete service
     del_r = await client.delete_service(svc_id)
     assert del_r.is_ok, f"delete_service failed: {del_r.unwrap_err()}"
     resp = del_r.unwrap()
-    assert resp["deleted"] is True
+    assert resp.deleted is True
 
 
 @pytest.mark.asyncio
@@ -313,11 +313,11 @@ async def test_index_service(client):
         )
         assert result.is_ok, f"index_service failed: {result.unwrap_err()}"
         resp = result.unwrap()
-        assert resp["service_id"]
-        assert resp["workflow_id"]
-        assert len(resp["stage_ids"]) == n
-        assert len(resp["pattern_ids"]) == n
-        assert len(resp["building_block_ids"]) == n
+        assert resp.service_id
+        assert resp.workflow_id
+        assert len(resp.stage_ids) == n
+        assert len(resp.pattern_ids) == n
+        assert len(resp.building_block_ids) == n
 
     # Cleanup
     # del_r = await client.delete_service(resp["service_id"])

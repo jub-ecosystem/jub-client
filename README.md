@@ -1,5 +1,11 @@
 # jub-client
 
+[![TestPyPI](https://img.shields.io/badge/TestPyPI-0.1.0a2-blue?logo=pypi&logoColor=white)](https://test.pypi.org/project/jub/0.1.0a2/)
+[![Status](https://img.shields.io/badge/status-alpha-orange)](https://test.pypi.org/project/jub/)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
+[![Coverage](https://img.shields.io/badge/coverage-run%20tests-lightgrey)](#running-tests)
+
 Official async Python client for the **JUB API v2** — part of the MADTEC-2025-M-478 project.
 
 jub-client gives you a fully-typed, async Python interface to the JUB national data hub. It organises information into **Observatories**, **Catalogs**, and **Products** following the STORI model (Spatial, Temporal, Observable, Reference, Interest).
@@ -25,6 +31,18 @@ jub-client gives you a fully-typed, async Python interface to the JUB national d
 ---
 
 ## Installation
+
+> **Alpha release** — `jub` is currently published on [TestPyPI](https://test.pypi.org/project/jub/). Use the commands below until it reaches a stable release on PyPI.
+
+### From TestPyPI (recommended for users)
+
+```bash
+pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ jub==0.1.0a2
+```
+
+The `--extra-index-url` flag lets pip resolve standard dependencies (e.g. `pydantic`, `httpx`) from PyPI while pulling `jub` itself from TestPyPI.
+
+### From source (recommended for contributors)
 
 **Prerequisites:** Python 3.10+, [Poetry](https://python-poetry.org/)
 

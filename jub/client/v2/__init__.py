@@ -396,6 +396,41 @@ class JubClient:
             return Err(ValueError("Provide json_path, json_string, or data."))
         return self._validated(DTO.CatalogCreatedBulkResponseDTO, await self._post(f"{self._catalogs_url}/bulk", payload))
 
+    async def create_bulk_catalogs_and_link_from_json(
+        self,
+        observatory_id:str,
+        json_path: Optional[str] = None,
+        json_string: Optional[str] = None,
+        data: Optional[List[Dict]] = None,
+    ) -> Result[DTO.CatalogCreatedBulkResponseDTO, Exception]:
+        """
+        POST /catalogs/bulk (from JSON source)
+
+        Convenience wrapper that loads a list of catalog payloads from a file
+        path, a raw JSON string, or an already-parsed list of dicts.
+
+        Args:
+            json_path: Path to a JSON file containing a list of catalog payloads.
+            json_string: Raw JSON string containing a list of catalog payloads.
+            data: Already-parsed list of dicts matching CatalogCreateDTO schema.
+
+        Returns:
+            Ok(CatalogCreatedBulkResponseDTO) on success, Err(exception) on failure.
+        """
+        if data is not None:
+            payload = data
+        elif json_string is not None:
+            payload = json.loads(json_string)
+        elif json_path is not None:
+            with open(json_path, encoding="utf-8") as f:
+                payload = json.load(f)
+        else:
+            return Err(ValueError("Provide json_path, json_string, or data."))
+        return self._validated(DTO.CatalogCreatedBulkResponseDTO, await self._post(f"{self._catalogs_url}/bulk/{observatory_id}/link", payload))
+
+
+
+
     async def list_catalogs(self) -> Result[List[DTO.CatalogSummaryDTO], Exception]:
         """
         GET /catalogs
