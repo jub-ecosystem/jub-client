@@ -1,0 +1,64 @@
+[
+     {
+            "catalog_id":"SEX",
+            "name":         "Biological Sex",
+            "value":        "SEX",
+            "catalog_type": "INTEREST",
+            "description":  "Biological sex dimension for disaggregated analysis",
+            "items": [
+                {
+                    "catalog_item_id": "FEMALE",
+                    "name": "Female", "value": "MUJER", "code": 2, "value_type": "STRING",
+                    "aliases": [{"value": "F", "value_type": "STRING", "description": "Short code"}],
+                    "children":[]
+                },
+                {
+                    "catalog_item_id": "MALE",
+                    "name": "Male", "value": "HOMBRE", "code": 1, "value_type": "STRING",
+                    "aliases": [{"value": "M", "value_type": "STRING", "description": "Short code"}],
+                    "children":[]
+                }
+            ]
+        },
+        {
+            "catalog_id":"AGE_GROUPS",
+            "name":         "Five-Year Age Groups",
+            "value":        "AGE_GROUPS",
+            "catalog_type": "INTEREST",
+            "description":  "Standard five-year age cohorts for epidemiological reporting",
+            "items": [
+                {"catalog_item_id": "AG_00_04", "name": "0–4",   "value": "AG_00_04", "code": 1, "value_type": "STRING"},
+                {"catalog_item_id": "AG_05_14", "name": "5–14",  "value": "AG_05_14", "code": 2, "value_type": "STRING"},
+                {"catalog_item_id": "AG_15_24", "name": "15–24", "value": "AG_15_24", "code": 3, "value_type": "STRING"},
+                {"catalog_item_id": "AG_25_34", "name": "25–34", "value": "AG_25_34", "code": 4, "value_type": "STRING"},
+                {"catalog_item_id": "AG_35_44", "name": "35–44", "value": "AG_35_44", "code": 5, "value_type": "STRING"},
+                {"catalog_item_id": "AG_45_54", "name": "45–54", "value": "AG_45_54", "code": 6, "value_type": "STRING"},
+                {"catalog_item_id": "AG_55_64", "name": "55–64", "value": "AG_55_64", "code": 7, "value_type": "STRING"},
+                {"catalog_item_id": "AG_65",   "name": "65+",   "value": "AG_65",    "code": 8, "value_type": "STRING"}
+            ]
+        },
+        {
+            "catalog_id":"TEMPORAL_YEARS_EXT",
+            "name":         "Report Years — Extended",
+            "value":        "TEMPORAL_YEARS_EXT",
+            "catalog_type": "TEMPORAL",
+            "description":  "Annual time dimension extended to 2024",
+            "items": [
+                {
+                    "catalog_item_id": "Y2000",
+                    "name": "2000", "value": "Y2000", "code": 2000,
+                    "value_type": "DATETIME", "temporal_value": "2000-01-01T00:00:00Z"
+                },
+                {
+                    "catalog_item_id": "Y2001",
+                    "name": "2001", "value": "Y2001", "code": 2001,
+                    "value_type": "DATETIME", "temporal_value": "2001-01-01T00:00:00Z"
+                },
+                {
+                    "catalog_item_id": "Y2024",
+                    "name": "2024", "value": "Y2024", "code": 2024,
+                    "value_type": "DATETIME", "temporal_value": "2024-01-01T00:00:00Z"
+                }
+            ]
+        }
+]
