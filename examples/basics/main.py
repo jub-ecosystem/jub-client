@@ -12,7 +12,10 @@ async def main():
             api_url  = os.environ.get("JUB_API_URL",  "https://apix.tamps.cinvestav.mx/jub"),
             username = os.environ.get("JUB_USERNAME", "invitado"),
             password = os.environ.get("JUB_PASSWORD", "invitado"),
-        ).build()
+        )\
+        .with_timeouts(timeout=60, write_timeout=120, read_timeout=10)\
+        .build()
+    
     #  Paso 2: Manejar el resultado de la autenticación
     if result.is_err:
         print(f"Error creating client: {result.unwrap_err()}")
@@ -25,7 +28,7 @@ async def main():
     setup_result = await client.setup_observatory(
         dto=DTO.ObservatorySetupDTO(
             observatory_id = observatory_id,
-            title          = "Observatorio de Prueba",
+            title          = f"Observatorio de Prueba - {iid}",
             description    = "Un observatorio creado para probar la funcionalidad de JubClient.",
             image_url      = "", 
             metadata       = {"llave1": "valor1", "llave2": "valor2"}
@@ -56,34 +59,45 @@ async def main():
     print(f"Catalogs created successfully: {catalogs_result.unwrap()}")
 
     # Paso 8: Indexar productos
-    product_id = f"producto-de-prueba-{iid}"
-    product_result = await client.create_product(
-        dto = DTO.ProductCreateDTO(
-            product_id       = product_id,
-            name             = "Producto de Prueba",
-            description      = "Un producto creado para probar la funcionalidad de JubClient.",
-            observatory_id   = observatory_id,
-            catalog_item_ids = ["MALE","Y2000"],                                                  # Los identificadores de items son los que hacen posible la busqueda. Por favor asegurate de que los items existan o cuando crees un catalogo y sus items, asignales identificadores que puedas usar para enlazar productos.
-        )
-    )
+    N= 10
+    group_ages = ["AG_00_04","AG_05_14","AG_15_24","AG_25_34","AG_35_44","AG_45_54","AG_55_64","AG_65"]
+    sexes  = ["MALE","FEMALE"]
+    temporal = ["Y2000","Y2001","Y2004"]
 
-    if product_result.is_err:
-        print(f"Error creating product: {product_result.unwrap_err()}")
-        raise product_result.unwrap_err()
-    print(f"Product created successfully: {product_result.unwrap()}")
-    #  Paso 8: Cargar datos al producto
-    data_result = await client.upload_product(
-        # file_path="/source/heatmap.html",
-        file_path="/source/mapon.html",
-        product_id=product_id,
-    )
-    if data_result.is_err:
-        print(f"Error uploading product data: {data_result.unwrap_err()}")
-        raise data_result.unwrap_err()
-    print(f"Product data uploaded successfully: {data_result.unwrap()}")
+    for i in range(N):
+        tags = [
+            group_ages[i % len(group_ages)],
+            sexes[i % len(sexes)],
+            temporal[i % len(temporal)],
+        ]
+        product_id = f"producto-de-prueba-{iid}-{i}"
+        product_result = await client.create_product(
+            dto = DTO.ProductCreateDTO(
+                product_id       = product_id,
+                name             = f"Producto de Prueba - {iid}",
+                description      = "Un producto creado para probar la funcionalidad de JubClient.",
+                observatory_id   = observatory_id,
+                catalog_item_ids = tags,                                                  # Los identificadores de items son los que hacen posible la busqueda. Por favor asegurate de que los items existan o cuando crees un catalogo y sus items, asignales identificadores que puedas usar para enlazar productos.
+            )
+        )
+
+        if product_result.is_err:
+            print(f"Error creating product: {product_result.unwrap_err()}")
+            raise product_result.unwrap_err()
+        print(f"Product created successfully: {product_result.unwrap()}")
+        #  Paso 8: Cargar datos al producto
+        data_result = await client.upload_product(
+            # file_path="/source/heatmap.html",
+            file_path="/source/mapon.html",
+            product_id=product_id,
+        )
+        if data_result.is_err:
+            print(f"Error uploading product data: {data_result.unwrap_err()}")
+            raise data_result.unwrap_err()
+        print(f"Product data uploaded successfully: {data_result.unwrap()}")
+
 
     # Paso 9: Asignar tags a un producto
-    #
     task_result = await client.complete_task(
         task_id=task_id,
         dto=DTO.TaskCompleteDTO(

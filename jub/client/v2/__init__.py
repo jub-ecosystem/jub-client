@@ -86,6 +86,12 @@ class JubClientBuilder:
         self.username = username 
         self.password = password
         return self
+    def with_timeouts(self, timeout:int = 30, write_timeout:int = 120, read_timeout:int = 10) -> JubClientBuilder:
+        self.client.timeout = timeout
+        self.client.write_timeout = write_timeout
+        self.client.read_timeout = read_timeout
+        return self
+
     async def build(self) -> Result[JubClient, Exception]:
         client = JubClient(self.api_url, self.username, self.password)
         auth_result = await client.authenticate()
