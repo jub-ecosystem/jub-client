@@ -119,6 +119,13 @@ async def index_service_oneshot(client: JubClient) -> str:
     print(f"  Stage IDs         : {resp.stage_ids}")
     print(f"  Pattern IDs       : {resp.pattern_ids}")
     print(f"  Building Block IDs: {resp.building_block_ids}")
+    
+
+    # Uncomment if you want to link the service to an observatory (optional)
+    # response = await client.link_service_to_observatory(observatory_id="obs_cronicas_mx", service_id=resp.service_id)
+    # if response.is_err:
+        # raise RuntimeError(f"link_service_to_observatory failed: {response.unwrap_err()}")
+    
     return resp.service_id
 
 
@@ -240,6 +247,7 @@ async def search_for_service(client: JubClient, service_name: str) -> None:
 
 async def main() -> None:
     step_by_step = "--step-by-step" in sys.argv
+    
 
     result = await JubClientBuilder(
         api_url  = os.environ.get("JUB_API_URL",  "http://localhost:5000"),

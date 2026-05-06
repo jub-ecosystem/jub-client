@@ -119,3 +119,82 @@ Entities in v2 are **not embedded** — they are linked through explicit relatio
 
 !!! info "v2 vs v1"
     In v1 the Observatory embedded its catalogs and items directly. In v2 all relationships are expressed through link objects and managed via dedicated API endpoints. This decoupling allows items to belong to multiple catalogs and products to be tagged across multiple catalogs.
+
+---
+
+## Extended response models
+
+These DTOs are returned by specific API methods and extend or compose the core entities above.
+
+### `ObservatoryDetailDTO`
+
+Returned by `get_observatory()`. Extends `ObservatoryXDTO` with aggregated relationship and rating data.
+
+| Field | Type | Description |
+|---|---|---|
+| `observatory_id` | `str` | Unique identifier |
+| `title` | `str` | Display name |
+| `description` | `str` | Description |
+| `image_url` | `str` | Image URL (optional) |
+| `metadata` | `dict` | Arbitrary key-value metadata |
+| `created_at` | `str` | ISO 8601 creation timestamp |
+| `updated_at` | `str` | ISO 8601 last-update timestamp |
+| `services` | `List[ServiceSnapshotDTO]` | Linked services |
+| `data_sources` | `List[DataSourceSnapshotDTO]` | Linked data sources |
+| `avg_rating` | `float` | Average user rating (0.0–5.0) |
+| `review_count` | `int` | Total number of reviews |
+
+### `ObservatoryStatsDTO`
+
+Returned per-observatory by `get_observatories_stats()`.
+
+| Field | Type | Description |
+|---|---|---|
+| `observatory_id` | `str` | Unique identifier |
+| `avg_rating` | `float` | Average user rating (0.0–5.0) |
+| `review_count` | `int` | Total number of reviews |
+| `services` | `List[ServiceSnapshotDTO]` | Linked services |
+| `data_sources` | `List[DataSourceSnapshotDTO]` | Linked data sources |
+
+### `ServiceSnapshotDTO`
+
+Lightweight service summary embedded in observatory responses.
+
+| Field | Type | Description |
+|---|---|---|
+| `service_id` | `str` | Service identifier |
+| `name` | `str` | Display name |
+| `provider` | `str` | Provider name (optional) |
+
+### `DataSourceSnapshotDTO`
+
+Lightweight data source summary embedded in observatory responses.
+
+| Field | Type | Description |
+|---|---|---|
+| `source_id` | `str` | Data source identifier |
+| `name` | `str` | Display name |
+
+---
+
+## Update request DTOs
+
+### `CatalogUpdateDTO`
+
+Used by `update_catalog()`. All fields are optional — omit any you do not want to change.
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | `str` | New human-readable name |
+| `description` | `str` | New description |
+
+### `DataSourceUpdateDTO`
+
+Used by `update_data_source()`. All fields are optional.
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | `str` | New human-readable name |
+| `description` | `str` | New description |
+| `connection_uri` | `str` | New database connection string |
+| `bucket_id` | `str` | New MictlanX bucket identifier |

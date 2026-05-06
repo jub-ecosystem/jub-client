@@ -57,30 +57,38 @@ async def main():
 
     # Paso 8: Indexar productos
     product_id = f"producto-de-prueba-{iid}"
-    product_result = await client.create_product(
-        dto = DTO.ProductCreateDTO(
-            product_id       = product_id,
-            name             = "Producto de Prueba",
-            description      = "Un producto creado para probar la funcionalidad de JubClient.",
-            observatory_id   = observatory_id,
-            catalog_item_ids = ["MALE","Y2000"],                                                  # Los identificadores de items son los que hacen posible la busqueda. Por favor asegurate de que los items existan o cuando crees un catalogo y sus items, asignales identificadores que puedas usar para enlazar productos.
-        )
+
+    base_dto = DTO.ProductCreateDTO(
+        product_id       = product_id,
+        name             = "Producto de Prueba",
+        description      = "Un producto creado para probar la funcionalidad de JubClient.",
+        observatory_id   = observatory_id,
+        catalog_item_ids = ["MALE","Y2000"],                                                  # Los identificadores de items son los que hacen posible la busqueda. Por favor asegurate de que los items existan o cuando crees un catalogo y sus items, asignales identificadores que puedas usar para enlazar productos.
     )
 
-    if product_result.is_err:
-        print(f"Error creating product: {product_result.unwrap_err()}")
-        raise product_result.unwrap_err()
-    print(f"Product created successfully: {product_result.unwrap()}")
     #  Paso 8: Cargar datos al producto
-    data_result = await client.upload_product(
-        # file_path="/source/heatmap.html",
-        file_path="/source/mapon.html",
-        product_id=product_id,
-    )
-    if data_result.is_err:
-        print(f"Error uploading product data: {data_result.unwrap_err()}")
-        raise data_result.unwrap_err()
-    print(f"Product data uploaded successfully: {data_result.unwrap()}")
+    
+    for i in range(10): 
+        #  Esto pasa en una primera ejecucion, 
+        # Para fines del ejercicio, se crean 100 productos con diferente ID.
+        base_dto.product_id = f"{product_id}-{i}"
+        base_dto.name = f"Producto de Prueba {i}"
+        product_result = await client.create_product(base_dto)
+        
+        # *NUEVO* - Registrar la carga de datos para cada producto creado 
+        data_result = client.register_upload(
+            product_id=base_dto.product_id,
+            payload="/source/mapon.html",
+        )
+        # *NUEVO* - Manejar el resultado del registro de carga de datos
+        if data_result.is_err:
+            print(f"Error registering upload: {data_result.unwrap_err()}")
+
+    # *NUEVO* - Esperar a que se completen las cargas de datos.
+    result = await client.wait_uploads(workers=1, max_retries=3)
+    
+
+
 
     # Paso 9: Asignar tags a un producto
     #

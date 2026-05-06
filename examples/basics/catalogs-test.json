@@ -1,0 +1,23 @@
+[
+     {
+            "catalog_id":"SEX45XX",
+            "name":         "Biological Sex",
+            "value":        "SEX",
+            "catalog_type": "INTEREST",
+            "description":  "Biological sex dimension for disaggregated analysis",
+            "items": [
+                {
+                    "catalog_item_id": "FEMALE",
+                    "name": "Female", "value": "MUJER", "code": 2, "value_type": "STRING",
+                    "aliases": [{"value": "F", "value_type": "STRING", "description": "Short code"}],
+                    "children":[]
+                },
+                {
+                    "catalog_item_id": "MALE",
+                    "name": "Male", "value": "HOMBRE", "code": 1, "value_type": "STRING",
+                    "aliases": [{"value": "M", "value_type": "STRING", "description": "Short code"}],
+                    "children":[]
+                }
+            ]
+        }
+]

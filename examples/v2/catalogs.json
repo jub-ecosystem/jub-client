@@ -163,12 +163,14 @@
     ]
   },
   {
+    "catalog_id":"TEMPORAL_ANIO",
     "name": "Dimensión Temporal — Años de Reporte",
     "value": "TEMPORAL_ANIO",
     "catalog_type": "TEMPORAL",
     "description": "Años calendario presentes en los reportes de emisiones",
     "items": [
       {
+        "catalog_item_id":"Y2004",
         "name": "2004",
         "value": "Y2004",
         "code": 2004,
@@ -177,16 +179,19 @@
         "temporal_value": "2004-01-01T00:00:00+00:00",
         "aliases": [
           {
+            "catalog_alias_id": "Y2004_NUM",
             "value": "2004",
             "value_type": "NUMBER",
             "description": "Año como entero"
           },
           {
+            "catalog_alias_id": "Y2004_STR_ES",
             "value": "AÑO_2004",
             "value_type": "STRING",
             "description": "Etiqueta en español"
           },
           {
+            "catalog_alias_id": "Y2004_STR_EN",
             "value": "YEAR_2004",
             "value_type": "STRING",
             "description": "Etiqueta en inglés"
@@ -195,6 +200,7 @@
         "children": []
       },
       {
+        "catalog_item_id":"Y2005",
         "name": "2005",
         "value": "Y2005",
         "code": 2005,
@@ -203,16 +209,19 @@
         "temporal_value": "2005-01-01T00:00:00+00:00",
         "aliases": [
           {
+            "catalog_alias_id": "Y2005_NUM",
             "value": "2005",
             "value_type": "NUMBER",
             "description": "Año como entero"
           },
           {
+            "catalog_alias_id": "Y2005_STR_ES",
             "value": "AÑO_2005",
             "value_type": "STRING",
             "description": "Etiqueta en español"
           },
           {
+            "catalog_alias_id": "Y2005_STR_EN",
             "value": "YEAR_2005",
             "value_type": "STRING",
             "description": "Etiqueta en inglés"
