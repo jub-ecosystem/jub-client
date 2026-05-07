@@ -20,6 +20,7 @@ jub-client gives you a fully-typed, async Python interface to the JUB national d
   - [STORI model](#stori-model)
   - [Result type](#result-type)
   - [Authentication](#authentication)
+  - [Data graph](#data-graph)
 - [API overview](#api-overview)
 - [JUB query language](#jub-query-language)
 - [Environment variables](#environment-variables)
@@ -157,6 +158,21 @@ client = JubClient("http://localhost:5000", "admin", "secret")
 await client.authenticate()
 # All subsequent calls are authenticated automatically
 ```
+
+### Data graph
+
+JUB entities (Observatories, Catalogs, Catalog Items, Products) are graph nodes linked through explicit edge objects. Links are additive and non-destructive — removing a link never deletes either endpoint entity.
+
+```
+Observatory ──has_catalog──> Catalog ──has_item──> CatalogItem
+     │                                                   │
+     ├──has_product──> Product ─────tagged_with──> CatalogItem
+     │                                                   ↕ child_of
+     ├──has_datasource──> DataSource
+     └──has_service──> Service
+```
+
+See [Data model — Links and graph model](docs/data-model.md#links-and-graph-model) for the full edge map, link objects, and `LinkMapDTO` usage.
 
 ---
 
@@ -298,10 +314,12 @@ All methods are `async`. The base URL is `{api_url}/api/v2`.
 | `mark_all_notifications_read()` | `PUT /notifications/read-all` | Mark all notifications as read |
 | `clear_read_notifications()` | `DELETE /notifications/clear-read` | Delete all read notifications |
 
-### Building blocks, Patterns, Stages, Workflows, Services
+### Building blocks, Patterns, Stages, Workflows, Services — Nez Team *(experimental)*
+
+> **Experimental.** These endpoints were contributed by the Nez Team and are subject to change. See [External integrations — Nez Team](docs/data-model.md#external-integrations--nez-team-experimental) for the full DTO reference.
 
 | Group | Methods | Endpoint prefix |
-|-------|---------|-----------------|
+|---|---|---|
 | Building blocks | `create`, `list`, `get`, `update`, `delete` | `/building-blocks` |
 | Patterns | `create`, `list`, `get`, `update`, `delete` | `/patterns` |
 | Stages | `create`, `list`, `get`, `update`, `delete` | `/stages` |
