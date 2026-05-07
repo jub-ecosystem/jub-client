@@ -58,7 +58,8 @@ async def index_service_oneshot(client: JubClient) -> str:
     """
     print("\n[Option A] Creating service tree with index_service()...")
     idd = uuid4().hex[:6]  # random suffix to avoid name collisions in repeated runs
-    result = await client.index_service(DTO.ServiceIndexDTO(
+    result = await client.index_service(
+        dto = DTO.ServiceIndexDTO(
         name        = f"cancer-ingest-svc-{idd}",
         owner_id    = client.user_id,
         description = "Automated ingestion pipeline for cancer mortality CSV reports.",

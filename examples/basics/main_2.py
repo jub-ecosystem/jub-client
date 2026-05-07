@@ -3,8 +3,6 @@ import os
 from jub.client.v2 import JubClient,JubClientBuilder
 import jub.dto.v2 as DTO
 from uuid import uuid4
-
-from tests.test_bulk_upload import client
 async def main():
     iid = uuid4().hex[:6]
     observatory_id = f"observatorio-de-prueba-{iid}"
@@ -15,9 +13,10 @@ async def main():
             username = os.environ.get("JUB_USERNAME", "invitado"),
             password = os.environ.get("JUB_PASSWORD", "invitado"),
         )\
-    .with_timeouts(timeout=60, write_timeout=120, read_timeout=10)\
-    .with_upload_registry("/jub/registry.json")\
-    .build()
+        .with_timeouts(timeout=60, write_timeout=120, read_timeout=10)\
+        .with_upload_registry("/jub/registry.json")\
+        .build()
+    
     #  Paso 2: Manejar el resultado de la autenticación
     if result.is_err:
         print(f"Error creating client: {result.unwrap_err()}")
@@ -50,10 +49,7 @@ async def main():
     print(f"Observatory setup successfully: task_id={task_id}")
     
     # Paso 7: Indexar catalogos y enlazarlos a un observatorio
-    # catalogs_result = await client.create_bulk_catalogs_and_link_from_json(
-    #     json_path= "examples/basics/catalogs-test.json",
-    #     observatory_id=observatory_id
-    # )
+    
     catalogs_result = await client.link_catalog_to_observatory(
         observatory_id=observatory_id,
         dto = DTO.LinkCatalogDTO(
@@ -63,50 +59,59 @@ async def main():
     )
     if catalogs_result.is_err:
         print(f"Error creating catalogs: {catalogs_result.unwrap_err()}")
-        raise catalogs_result.unwrap_err()
+    
+
     print(f"Catalogs created successfully: {catalogs_result.unwrap()}")
 
+    # catalogs_result = await client.create_bulk_catalogs_and_link_from_json(
+    #     json_path= "examples/basics/catalogs-test.json",
+    #     observatory_id=observatory_id
+    # )
+
+    # if catalogs_result.is_err:
+    #     print(f"Error creating catalogs: {catalogs_result.unwrap_err()}")
+    #     raise catalogs_result.unwrap_err()
+
     # Paso 8: Indexar productos
-    # product_id = f"producto-de-prueba-{iid}"
-    product_id = f"producto-de-prueba-4c5b7f"
+    N= 10
+    # group_ages = ["AG_00_04","AG_05_14","AG_15_24","AG_25_34","AG_35_44","AG_45_54","AG_55_64","AG_65"]
+    sexes  = ["MALE","FEMALE"]
+    # temporal = ["Y2000","Y2001","Y2004"]
 
-    base_dto = DTO.ProductCreateDTO(
-        product_id       = product_id,
-        # product_id="producto-de-prueba-4c5b7f",
-        name             = "Producto de Prueba",
-        description      = "Un producto creado para probar la funcionalidad de JubClient.",
-        observatory_id   = observatory_id,
-        catalog_item_ids = ["MALE","Y2000"],                                                  # Los identificadores de items son los que hacen posible la busqueda. Por favor asegurate de que los items existan o cuando crees un catalogo y sus items, asignales identificadores que puedas usar para enlazar productos.
-    )
+    for i in range(N):
+        tags = [
+            # group_ages[i % len(group_ages)],
+            sexes[i % len(sexes)],
+            # temporal[i % len(temporal)],
+        ]
+        product_id = f"producto-de-prueba-{iid}-{i}"
+        product_result = await client.create_product(
+            dto = DTO.ProductCreateDTO(
+                product_id       = product_id,
+                name             = f"Producto de Prueba - {iid}",
+                description      = "Un producto creado para probar la funcionalidad de JubClient.",
+                observatory_id   = observatory_id,
+                catalog_item_ids = tags,                                                  # Los identificadores de items son los que hacen posible la busqueda. Por favor asegurate de que los items existan o cuando crees un catalogo y sus items, asignales identificadores que puedas usar para enlazar productos.
+            )
+        )
 
-    #  Paso 8: Cargar datos al producto
-    
-    for i in range(10): 
-        #  Esto pasa en una primera ejecucion, 
-        # Para fines del ejercicio, se crean 100 productos con diferente ID.
-        base_dto.product_id = f"{product_id}-{i}"
-        base_dto.name = f"Producto de Prueba {i}"
-        product_result = await client.create_product(base_dto)
         if product_result.is_err:
             print(f"Error creating product: {product_result.unwrap_err()}")
             raise product_result.unwrap_err()
-        # *NUEVO* - Registrar la carga de datos para cada producto creado 
-        data_result = client.register_upload(
-            product_id=base_dto.product_id,
-            payload="/source/mapon.html",
+        print(f"Product created successfully: {product_result.unwrap()}")
+        #  Paso 8: Cargar datos al producto
+        data_result = await client.upload_product(
+            # file_path="/source/heatmap.html",
+            file_path="/source/mapon.html",
+            product_id=product_id,
         )
-        # *NUEVO* - Manejar el resultado del registro de carga de datos
         if data_result.is_err:
-            print(f"Error registering upload: {data_result.unwrap_err()}")
-
-    # *NUEVO* - Esperar a que se completen las cargas de datos.
-    result = await client.wait_uploads(workers=1, max_retries=3)
-    
-
+            print(f"Error uploading product data: {data_result.unwrap_err()}")
+            raise data_result.unwrap_err()
+        print(f"Product data uploaded successfully: {data_result.unwrap()}")
 
 
     # Paso 9: Asignar tags a un producto
-    #
     task_result = await client.complete_task(
         task_id=task_id,
         dto=DTO.TaskCompleteDTO(

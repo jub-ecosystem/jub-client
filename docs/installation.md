@@ -20,13 +20,13 @@ pipx install poetry
 JUB Client is under active development and is currently published on **[TestPyPI](https://test.pypi.org/project/jub/)** as a pre-release alpha. Install the latest version with:
 
 ```bash
-pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ jub==0.1.0a2
+pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ jub==0.1.0a4
 ```
 
 The `--extra-index-url` flag ensures that standard dependencies (such as `pydantic`, `httpx`, and `option`) are resolved from the main PyPI index, while `jub` itself is pulled from TestPyPI.
 
 !!! warning "Always pin the version"
-    Use an explicit version pin (`==0.1.0a2`) to avoid accidentally installing a broken pre-release. Check the [release history](https://test.pypi.org/project/jub/#history) for the latest available version.
+    Use an explicit version pin (`==0.1.0a4`) to avoid accidentally installing a broken pre-release. Check the [release history](https://test.pypi.org/project/jub/#history) for the latest available version.
 
 ---
 
