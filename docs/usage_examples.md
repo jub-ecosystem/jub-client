@@ -33,11 +33,17 @@ Complete, runnable examples for the most common workflows. All examples assume y
     from jub.client.v2 import JubClientBuilder
 
     async def main():
-        result = await JubClientBuilder(
-            api_url  = os.environ.get("JUB_API_URL",  "http://localhost:5000"),
-            username = os.environ.get("JUB_USERNAME", "admin"),
-            password = os.environ.get("JUB_PASSWORD", "secret"),
-        ).build()
+        result = await (
+            JubClientBuilder()
+            .with_api_url(os.environ.get("JUB_API_URL",  "http://localhost:5000"))
+            .with_credentials(
+                os.environ.get("JUB_USERNAME", "admin"),
+                os.environ.get("JUB_PASSWORD", "secret"),
+            )
+            .with_timeouts(timeout=30, write_timeout=180, read_timeout=15)
+            .with_upload_registry("/data/jobs/uploads.json")  # optional: enables upload persistence
+            .build()
+        )
 
         if result.is_err:
             raise result.unwrap_err()
@@ -332,4 +338,196 @@ print(f"Queued as job {upload.job_id} (status: {upload.status})")
 raw_bytes = (await client.download_product("prod_mortality_by_state")).unwrap()
 with open("output.html", "wb") as f:
     f.write(raw_bytes)
+```
+
+---
+
+## Link and unlink entities
+
+All relationships in the JUB model are explicit links managed through dedicated endpoints. Every pair below shows how to create the link and how to remove it.
+
+### Catalog ↔ Observatory
+
+```python
+import jub.dto.v2 as DTO
+
+# Link an existing catalog to an observatory at display level 1
+link = (await client.link_catalog_to_observatory(
+    "obs_cancer_mx_2024",
+    DTO.LinkCatalogDTO(catalog_id="cat_cie10_cancer", level=1),
+)).unwrap()
+print(link.observatory_id, link.catalog_id, link.level)
+
+# Remove the link
+await client.unlink_catalog_from_observatory("obs_cancer_mx_2024", "cat_cie10_cancer")
+```
+
+---
+
+### Product ↔ Observatory
+
+```python
+# Link an existing product to an observatory
+link = (await client.link_product_to_observatory(
+    "obs_cancer_mx_2024",
+    DTO.LinkProductDTO(product_id="prod_mortality_by_state"),
+)).unwrap()
+print(link.observatory_id, link.product_id)
+
+# Remove the link
+await client.unlink_product_from_observatory("obs_cancer_mx_2024", "prod_mortality_by_state")
+```
+
+---
+
+### Catalog item ↔ parent item (hierarchy)
+
+```python
+# Make item_cervix a child of item_female_cancers
+link = (await client.link_catalog_item_child(
+    "item_female_cancers",
+    DTO.CatalogItemChildLinkCreateDTO(child_item_id="item_cervix"),
+)).unwrap()
+print(link.parent_item_id, link.child_item_id)
+
+# Remove the child relationship
+await client.unlink_catalog_item_child("item_female_cancers", "item_cervix")
+```
+
+---
+
+### Catalog item ↔ Catalog
+
+```python
+# Link a standalone item into a different catalog
+link = (await client.link_item_to_catalog(
+    "item_cervix",
+    DTO.CatalogItemCatalogLinkCreateDTO(catalog_id="cat_secondary"),
+)).unwrap()
+print(link.catalog_item_id, link.catalog_id)
+
+# Remove the item from that catalog
+await client.unlink_item_from_catalog("item_cervix", "cat_secondary")
+```
+
+---
+
+### Data source ↔ Observatory
+
+```python
+# Link a registered data source to an observatory
+result = await client.link_datasource_to_observatory(
+    "obs_cancer_mx_2024",
+    "ds_sinais_mortality",
+)
+assert result.is_ok
+
+# Remove the link
+await client.unlink_datasource_from_observatory("obs_cancer_mx_2024", "ds_sinais_mortality")
+```
+
+---
+
+### Service ↔ Observatory
+
+```python
+# Link a service to an observatory
+result = await client.link_service_to_observatory(
+    "obs_cancer_mx_2024",
+    "svc_cancer_pipeline",
+)
+assert result.is_ok
+
+# Remove the link
+await client.unlink_service_from_observatory("obs_cancer_mx_2024", "svc_cancer_pipeline")
+```
+
+---
+
+### Product tags (catalog items ↔ product)
+
+```python
+# Tag a product with two catalog items so it appears in DSL searches
+tags = (await client.add_product_tags(
+    "prod_mortality_by_state",
+    DTO.TagProductDTO(catalog_item_ids=["item_MX", "item_C_MAMA"]),
+)).unwrap()
+print(tags.product_id, tags.catalog_item_ids)
+
+# Remove a single tag
+await client.remove_product_tag("prod_mortality_by_state", "item_C_MAMA")
+```
+
+---
+
+## Bulk upload with registry
+
+The upload registry makes large batches safe to restart: products that already succeeded in a previous run are detected and skipped automatically.
+
+### First run
+
+```python
+import asyncio, os
+from jub.client.v2 import JubClientBuilder
+
+async def main():
+    client = (await (
+        JubClientBuilder()
+        .with_api_url("http://localhost:5000")
+        .with_credentials("admin", "secret")
+        .with_upload_registry("/data/jobs/uploads.json")
+        .build()
+    )).unwrap()
+
+    files = [
+        ("prod_report_2020", "/data/reports/2020.html"),
+        ("prod_report_2021", "/data/reports/2021.html"),
+        ("prod_report_2022", "/data/reports/2022.html"),
+    ]
+
+    for product_id, path in files:
+        client.register_upload(product_id, path)
+
+    result = (await client.wait_uploads(workers=3, max_retries=2)).unwrap()
+    print(f"Succeeded: {len(result.succeeded)}")
+    print(f"Failed:    {len(result.failed)}")
+    print(f"Skipped:   {len(result.skipped)}")   # 0 on first run
+
+asyncio.run(main())
+```
+
+### Resuming after a partial failure
+
+Re-run the exact same script. Products already recorded as `succeeded` are skipped; only those that failed or were never attempted are uploaded again.
+
+```python
+# Identical loop — registry handles deduplication automatically
+for product_id, path in files:
+    client.register_upload(product_id, path)
+
+result = (await client.wait_uploads(workers=3, max_retries=2)).unwrap()
+print(f"Succeeded: {len(result.succeeded)}")
+print(f"Skipped:   {len(result.skipped)}")   # grows on each rerun
+```
+
+### Retrying only failed uploads
+
+```python
+# Remove failed entries so they are attempted again on the next run,
+# without touching the succeeded entries.
+removed = client.reset_failed_uploads().unwrap()
+print(f"Cleared {removed} failed entries")
+
+# Then re-register and run as normal
+for product_id, path in files:
+    client.register_upload(product_id, path)
+await client.wait_uploads(workers=3, max_retries=2)
+```
+
+### Clearing the entire registry
+
+```python
+# Wipe everything — the next run treats all products as new.
+# Use with caution: succeeded entries are lost.
+client.clear_upload_registry().unwrap()
 ```
