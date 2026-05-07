@@ -24,6 +24,9 @@ JubClient(
     scope: Optional[str] = None,
     token_expiration: Optional[str] = None,
     renew_token: bool = True,
+    write_timeout: int = 120,
+    read_timeout: int = 10,
+    timeout: int = 30,
 )
 ```
 
@@ -35,6 +38,9 @@ JubClient(
 | `scope` | `str` | `"jub"` | JWT scope |
 | `token_expiration` | `str` | `"1h"` | JWT expiration string (e.g. `"2h"`, `"30m"`) |
 | `renew_token` | `bool` | `True` | Automatically renew the token when it expires |
+| `write_timeout` | `int` | `120` | Seconds before a write (upload) request times out |
+| `read_timeout` | `int` | `10` | Seconds before a read response times out |
+| `timeout` | `int` | `30` | Default connect/pool timeout in seconds |
 
 ---
 
@@ -279,6 +285,60 @@ async def create_bulk_catalogs_from_json(
 | `data` | `List[dict]` | Already-parsed list of dicts |
 
 **Returns:** `Ok(CatalogCreatedBulkResponseDTO)` — contains `catalog_ids: List[str]`.
+
+---
+
+### `update_catalog`
+
+```python
+async def update_catalog(
+    catalog_id: str,
+    payload: CatalogUpdateDTO,
+) -> Result[CatalogSummaryDTO, Exception]
+```
+
+`PUT /catalogs/{catalog_id}` — Updates mutable fields on an existing catalog. Does not touch nested items or aliases.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `catalog_id` | `str` | Target catalog identifier |
+| `payload` | `CatalogUpdateDTO` | Fields to update |
+
+**`CatalogUpdateDTO` fields** (all optional):
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | `str` | New human-readable name |
+| `description` | `str` | New description |
+
+**Returns:** `Ok(CatalogSummaryDTO)`.
+
+```python
+result = await client.update_catalog(
+    "cat_abc",
+    DTO.CatalogUpdateDTO(name="Renamed Catalog"),
+)
+```
+
+---
+
+### `delete_catalog`
+
+```python
+async def delete_catalog(catalog_id: str) -> Result[CatalogSummaryDTO, Exception]
+```
+
+`DELETE /catalogs/{catalog_id}` — Deletes a catalog and all its linked relationships.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `catalog_id` | `str` | Target catalog identifier |
+
+**Returns:** `Ok(CatalogSummaryDTO)` — the deleted catalog's summary.
+
+```python
+result = await client.delete_catalog("cat_abc")
+```
 
 ---
 
@@ -671,12 +731,51 @@ async def list_observatories(
 ### `get_observatory`
 
 ```python
-async def get_observatory(observatory_id: str) -> Result[ObservatoryXDTO, Exception]
+async def get_observatory(observatory_id: str) -> Result[ObservatoryDetailDTO, Exception]
 ```
 
-`GET /observatories/{id}` — Returns a single observatory.
+`GET /observatories/{id}` — Returns a single observatory enriched with linked services, data sources, and rating stats.
 
-**Returns:** `Ok(ObservatoryXDTO)`.
+**Returns:** `Ok(ObservatoryDetailDTO)` — extends `ObservatoryXDTO` with `services`, `data_sources`, `avg_rating`, and `review_count`.
+
+```python
+obs = (await client.get_observatory("obs_abc")).unwrap()
+print(obs.avg_rating, len(obs.services))
+```
+
+---
+
+### `get_observatories_stats`
+
+```python
+async def get_observatories_stats(
+    obs_ids: List[str],
+) -> Result[List[ObservatoryStatsDTO], Exception]
+```
+
+`POST /observatories/details` — Returns rating and relationship stats for a batch of observatory IDs.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `obs_ids` | `List[str]` | Observatory identifiers to query |
+
+**Returns:** `Ok(List[ObservatoryStatsDTO])`.
+
+**`ObservatoryStatsDTO` fields:**
+
+| Field | Type | Description |
+|---|---|---|
+| `observatory_id` | `str` | Observatory identifier |
+| `avg_rating` | `float` | Average user rating (0.0–5.0) |
+| `review_count` | `int` | Total number of reviews |
+| `services` | `List[ServiceSnapshotDTO]` | Linked services (id, name, provider) |
+| `data_sources` | `List[DataSourceSnapshotDTO]` | Linked data sources (id, name) |
+
+```python
+stats = (await client.get_observatories_stats(["obs_1", "obs_2"])).unwrap()
+for s in stats:
+    print(s.observatory_id, s.avg_rating, s.review_count)
+```
 
 ---
 
@@ -855,6 +954,114 @@ async def bulk_assign_products(
 | `catalog_item_ids` | `List[str]` | No | Tags to apply |
 
 **Returns:** `Ok(BulkProductsResponseDTO)` — contains `observatory_id` and `products: List[BulkProductCreatedDTO]`.
+
+---
+
+### `link_service_to_observatory`
+
+```python
+async def link_service_to_observatory(
+    observatory_id: str,
+    service_id: str,
+) -> Result[bool, Exception]
+```
+
+`POST /observatories/{id}/services` — Links an existing service to an observatory.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `observatory_id` | `str` | Target observatory |
+| `service_id` | `str` | Service to link |
+
+**Returns:** `Ok(True)` on success.
+
+---
+
+### `list_observatory_services`
+
+```python
+async def list_observatory_services(
+    observatory_id: str,
+) -> Result[List[ServiceSimpleDTO], Exception]
+```
+
+`GET /observatories/{id}/services` — Lists all services linked to an observatory.
+
+**`ServiceSimpleDTO` fields:**
+
+| Field | Type | Description |
+|---|---|---|
+| `service_id` | `str` | Service identifier |
+| `name` | `str` | Display name |
+| `description` | `str` | Description |
+| `provider` | `str` | Provider name (optional) |
+| `public` | `bool` | Whether the service is publicly visible |
+
+**Returns:** `Ok(List[ServiceSimpleDTO])`.
+
+---
+
+### `unlink_service_from_observatory`
+
+```python
+async def unlink_service_from_observatory(
+    observatory_id: str,
+    service_id: str,
+) -> Result[bool, Exception]
+```
+
+`DELETE /observatories/{id}/services/{service_id}` — Removes the link between a service and an observatory (204 No Content).
+
+**Returns:** `Ok(True)` on success.
+
+---
+
+### `link_datasource_to_observatory`
+
+```python
+async def link_datasource_to_observatory(
+    observatory_id: str,
+    datasource_id: str,
+) -> Result[bool, Exception]
+```
+
+`POST /observatories/{id}/datasources` — Links an existing data source to an observatory.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `observatory_id` | `str` | Target observatory |
+| `datasource_id` | `str` | Data source to link |
+
+**Returns:** `Ok(True)` on success.
+
+---
+
+### `list_observatory_datasources`
+
+```python
+async def list_observatory_datasources(
+    observatory_id: str,
+) -> Result[List[DataSourceDTO], Exception]
+```
+
+`GET /observatories/{id}/datasources` — Lists all data sources linked to an observatory.
+
+**Returns:** `Ok(List[DataSourceDTO])`.
+
+---
+
+### `unlink_datasource_from_observatory`
+
+```python
+async def unlink_datasource_from_observatory(
+    observatory_id: str,
+    datasource_id: str,
+) -> Result[bool, Exception]
+```
+
+`DELETE /observatories/{id}/datasources/{datasource_id}` — Removes the link between a data source and an observatory (204 No Content).
+
+**Returns:** `Ok(True)` on success.
 
 ---
 
@@ -1050,6 +1257,121 @@ with open("output.html", "wb") as f:
 
 ---
 
+## Bulk uploads
+
+`JubClient` includes a queue-based bulk upload system for ingesting many product files concurrently without blocking. The workflow is:
+
+1. Call `register_upload()` for each file (sync, returns immediately).
+2. Call `wait_uploads()` to drain the queue with configurable concurrency.
+
+Or use `bulk_upload_products()` as a single-call convenience wrapper.
+
+### Result types
+
+```python
+@dataclass
+class FailedUploadEntry:
+    product_id: str   # Product that failed
+    attempts: int     # Total attempts made
+    last_error: str   # Error message from the last attempt
+
+@dataclass
+class BulkUploadResult:
+    succeeded: List[ProductUploadResponseDTO]  # Successful job responses
+    failed: List[FailedUploadEntry]            # Permanent failures
+```
+
+---
+
+### `register_upload`
+
+```python
+def register_upload(
+    product_id: str,
+    payload: Union[str, bytes],
+) -> Result[int, Exception]
+```
+
+Enqueues a product upload job without executing it. This method is synchronous.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `product_id` | `str` | Product to upload to |
+| `payload` | `str` or `bytes` | File path on disk (`str`) or raw file bytes |
+
+**Returns:** `Ok(pending_count)` — number of jobs currently queued. `Err(TypeError)` if `payload` type is invalid.
+
+```python
+client.register_upload("prod_1", "/data/file1.csv")
+client.register_upload("prod_2", b"raw,csv,bytes")
+```
+
+---
+
+### `wait_uploads`
+
+```python
+async def wait_uploads(
+    workers: int = 1,
+    max_retries: int = 1,
+) -> Result[BulkUploadResult, Exception]
+```
+
+Processes all jobs registered via `register_upload()`. Drains and clears the queue on each call.
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `workers` | `int` | `1` | Number of concurrent upload coroutines |
+| `max_retries` | `int` | `1` | Maximum attempts per job (1 = no retry) |
+
+**Returns:** `Ok(BulkUploadResult)` — failed jobs are in `result.failed`, not wrapped in `Err`. Only returns `Err` if another `wait_uploads()` call is already running.
+
+```python
+client.register_upload("prod_1", "/data/report.csv")
+client.register_upload("prod_2", "/data/summary.json")
+
+result = (await client.wait_uploads(workers=4, max_retries=3)).unwrap()
+print(f"Done: {len(result.succeeded)} ok, {len(result.failed)} failed")
+for f in result.failed:
+    print(f.product_id, f.last_error)
+```
+
+---
+
+### `bulk_upload_products`
+
+```python
+async def bulk_upload_products(
+    uploads: List[Tuple[str, Union[str, bytes]]],
+    workers: int = 1,
+    max_retries: int = 1,
+) -> Result[BulkUploadResult, Exception]
+```
+
+Convenience wrapper that calls `register_upload()` for every entry and then calls `wait_uploads()`.
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `uploads` | `List[Tuple[str, str or bytes]]` | — | List of `(product_id, file_path_or_bytes)` pairs |
+| `workers` | `int` | `1` | Concurrent upload coroutines |
+| `max_retries` | `int` | `1` | Attempts per job before permanent failure |
+
+**Returns:** `Ok(BulkUploadResult)` or `Err` if any payload type is invalid.
+
+```python
+result = (await client.bulk_upload_products(
+    uploads=[
+        ("prod_1", "/data/report.csv"),
+        ("prod_2", "/data/summary.json"),
+        ("prod_3", b"inline,bytes,data"),
+    ],
+    workers=4,
+    max_retries=2,
+)).unwrap()
+```
+
+---
+
 ## Data Sources
 
 ### `register_data_source`
@@ -1113,6 +1435,42 @@ async def get_data_source(source_id: str) -> Result[DataSourceDTO, Exception]
 `GET /datasources/{id}` — Returns a single data source.
 
 **Returns:** `Ok(DataSourceDTO)`.
+
+---
+
+### `update_data_source`
+
+```python
+async def update_data_source(
+    source_id: str,
+    dto: Union[DataSourceUpdateDTO, Dict],
+) -> Result[DataSourceDTO, Exception]
+```
+
+`PUT /datasources/{id}` — Updates mutable fields on a data source. All fields are optional; omit any you do not want to change.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `source_id` | `str` | Target data source identifier |
+| `dto` | `DataSourceUpdateDTO` or `dict` | Fields to update |
+
+**`DataSourceUpdateDTO` fields** (all optional):
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | `str` | New human-readable name |
+| `description` | `str` | New description |
+| `connection_uri` | `str` | New database connection string |
+| `bucket_id` | `str` | New MictlanX bucket identifier |
+
+**Returns:** `Ok(DataSourceDTO)` — the updated data source.
+
+```python
+result = await client.update_data_source(
+    "ds_abc",
+    DTO.DataSourceUpdateDTO(name="Renamed Source"),
+)
+```
 
 ---
 

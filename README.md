@@ -181,8 +181,11 @@ All methods are `async`. The base URL is `{api_url}/api/v2`.
 | `create_catalog(dto)` | `POST /catalogs` | Create a catalog with nested items and hierarchy |
 | `create_catalog_from_json(...)` | `POST /catalogs` | Create a catalog from a file, JSON string, or dict |
 | `create_bulk_catalogs_from_json(...)` | `POST /catalogs/bulk` | Create multiple catalogs at once |
+| `create_bulk_catalogs_and_link_from_json(observatory_id, ...)` | `POST /catalogs/bulk/{observatory_id}/link` | Create multiple catalogs and link them to an observatory |
 | `list_catalogs()` | `GET /catalogs` | List all catalogs (summary) |
 | `get_catalog(catalog_id)` | `GET /catalogs/{id}` | Get a full catalog with items and aliases |
+| `update_catalog(catalog_id, dto)` | `PUT /catalogs/{id}` | Update mutable fields on a catalog |
+| `delete_catalog(catalog_id)` | `DELETE /catalogs/{id}` | Delete a catalog and its relationships |
 
 ### Catalog items — `/catalog-items`
 
@@ -211,7 +214,8 @@ All methods are `async`. The base URL is `{api_url}/api/v2`.
 | `create_observatory(dto)` | `POST /observatories` | Create an immediately-enabled observatory |
 | `setup_observatory(dto)` | `POST /observatories/setup` | Create a disabled observatory and queue a setup task |
 | `list_observatories(page_index, limit)` | `GET /observatories` | List observatories (paginated) |
-| `get_observatory(id)` | `GET /observatories/{id}` | Get a single observatory |
+| `get_observatory(id)` | `GET /observatories/{id}` | Get a single observatory with stats |
+| `get_observatories_stats(obs_ids)` | `POST /observatories/details` | Get stats (ratings, services, datasources) for multiple observatories |
 | `update_observatory(id, dto)` | `PUT /observatories/{id}` | Update mutable fields |
 | `delete_observatory(id)` | `DELETE /observatories/{id}` | Delete observatory and relationships |
 | `link_catalog_to_observatory(id, dto)` | `POST /observatories/{id}/catalogs` | Link an existing catalog |
@@ -222,6 +226,12 @@ All methods are `async`. The base URL is `{api_url}/api/v2`.
 | `link_product_to_observatory(id, dto)` | `POST /observatories/{id}/products` | Link an existing product |
 | `unlink_product_from_observatory(id, pid)` | `DELETE /observatories/{id}/products/{pid}` | Unlink a product |
 | `bulk_assign_products(id, dto)` | `POST /observatories/{id}/products/bulk` | Create and link multiple products |
+| `link_datasource_to_observatory(id, ds_id)` | `POST /observatories/{id}/datasources` | Link an existing data source |
+| `list_observatory_datasources(id)` | `GET /observatories/{id}/datasources` | List linked data sources |
+| `unlink_datasource_from_observatory(id, ds_id)` | `DELETE /observatories/{id}/datasources/{ds_id}` | Unlink a data source |
+| `link_service_to_observatory(id, svc_id)` | `POST /observatories/{id}/services` | Link an existing service |
+| `list_observatory_services(id)` | `GET /observatories/{id}/services` | List linked services |
+| `unlink_service_from_observatory(id, svc_id)` | `DELETE /observatories/{id}/services/{svc_id}` | Unlink a service |
 
 ### Products — `/products`
 
@@ -247,6 +257,7 @@ All methods are `async`. The base URL is `{api_url}/api/v2`.
 | `register_data_source_from_json(...)` | `POST /datasources` | Register from a file, JSON string, or dict |
 | `list_data_sources()` | `GET /datasources` | List all data sources |
 | `get_data_source(id)` | `GET /datasources/{id}` | Get a single data source |
+| `update_data_source(id, dto)` | `PUT /datasources/{id}` | Update mutable fields on a data source |
 | `delete_data_source(id)` | `DELETE /datasources/{id}` | Delete source and all its records |
 | `ingest_records(source_id, records)` | `POST /datasources/{id}/records` | Ingest a batch of records |
 | `ingest_records_from_json(source_id, ...)` | `POST /datasources/{id}/records` | Ingest records from a file, JSON string, or dict |

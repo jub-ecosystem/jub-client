@@ -66,6 +66,10 @@ async def register_datasource(client: JubClient) -> str:
     print(f"  Data source ID : {source.source_id}")
     print(f"  Name           : {source.name}")
     print(f"  Format         : {source.format}")
+    # Uncomment if you want to link the data source to an observatory (optional)
+    # response = await client.link_datasource_to_observatory(observatory_id="obs_cronicas_mx", datasource_id=source.source_id)
+    # if response.is_err:
+        # raise RuntimeError(f"link_datasource_to_observatory failed: {response.unwrap_err()}")
     return source.source_id
 
 

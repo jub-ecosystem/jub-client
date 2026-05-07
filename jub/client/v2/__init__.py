@@ -24,15 +24,41 @@ Usage:
 
 from __future__ import annotations
 
+import asyncio
+import time as T
 import os
 import json
-from typing import Any, Dict, List, Optional, Union
+import logging
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import httpx
 from option import Ok, Err, Result
 import jub.dto.v2 as DTO
 from functools import wraps
 from uuid import uuid4
+
+from jub.log import Log
+
+
+@dataclass
+class _UploadJob:
+    product_id: str
+    payload: Union[str, bytes]
+    attempt: int = 0
+
+
+@dataclass
+class FailedUploadEntry:
+    product_id: str
+    attempts: int
+    last_error: str
+
+
+@dataclass
+class BulkUploadResult:
+    succeeded: List[DTO.ProductUploadResponseDTO] = field(default_factory=list)
+    failed: List[FailedUploadEntry] = field(default_factory=list)
 
 
 class JubClientBuilder:
@@ -60,6 +86,12 @@ class JubClientBuilder:
         self.username = username 
         self.password = password
         return self
+    def with_timeouts(self, timeout:int = 30, write_timeout:int = 120, read_timeout:int = 10) -> JubClientBuilder:
+        self.client.timeout = timeout
+        self.client.write_timeout = write_timeout
+        self.client.read_timeout = read_timeout
+        return self
+
     async def build(self) -> Result[JubClient, Exception]:
         client = JubClient(self.api_url, self.username, self.password)
         auth_result = await client.authenticate()
@@ -92,12 +124,25 @@ class JubClient:
             print(result.unwrap())
     """
 
-    def __init__(self, api_url: str, username: str, password: str,scope:Optional[str]=None, token_expiration:Optional[str]=None, renew_token:bool=True):
+    def __init__(self, 
+                 api_url: str, 
+                 username: str, 
+                 password: str,
+                 scope: Optional[str] = None,
+                 token_expiration: Optional[str] = None,
+                 renew_token: bool = True,
+                 write_timeout:int = 120,
+                 read_timeout:int = 10,
+                 timeout:int = 30
+    ):
         base = f"{api_url.rstrip('/')}/api/v2"
         self.base_url = base
         self._username = username
         self._password = password
         self._token: Optional[str] = None
+        self.write_timeout = write_timeout
+        self.read_timeout = read_timeout
+        self.timeout = timeout
 
         self._users_url = f"{base}/users"
         self._catalogs_url = f"{base}/catalogs"
@@ -119,6 +164,15 @@ class JubClient:
         self.__scope = scope or "jub"
         self.__token_expiration = token_expiration or "1h"
         self.__renew_token = renew_token  # Automatically renew token on expiration
+
+        self._upload_queue: List[_UploadJob] = []
+        self._upload_lock = asyncio.Lock()
+        self._upload_logger = Log(
+            name="jub-uploads",
+            to_file=False,
+            console_handler_filter=lambda record: record.levelno >= logging.DEBUG,
+            console_handler_level=logging.DEBUG,
+        )
 
     # ── Internal helpers ───────────────────────────────────────
 
@@ -152,7 +206,15 @@ class JubClient:
         return headers
 
     def _client(self,headers:Dict[str,str]=None) -> httpx.AsyncClient:
-        return httpx.AsyncClient(headers=self._headers(headers), verify=False)
+        return httpx.AsyncClient(
+            headers=self._headers(headers), 
+            verify=False,
+            timeout= httpx.Timeout(
+                timeout = self.timeout,
+                write   = self.write_timeout,
+                read    = self.read_timeout
+            )
+        )
 
     async def _get(self, url: str, params: Dict = None,headers:Dict[str,str]=None) -> Result[Any, Exception]:
         try:
@@ -429,7 +491,33 @@ class JubClient:
         return self._validated(DTO.CatalogCreatedBulkResponseDTO, await self._post(f"{self._catalogs_url}/bulk/{observatory_id}/link", payload))
 
 
+    async def update_catalog(self,catalog_id:str, payload: DTO.CatalogUpdateDTO) -> Result[DTO.CatalogSummaryDTO, Exception]:
+        """
+        PUT /catalogs/{catalog_id}
 
+        Updates mutable fields on a catalog. Does not support nested updates to items or aliases.
+
+        Args:
+            catalog_id: Unique identifier of the catalog to update.
+            payload: Data transfer object containing the fields to update.
+        Returns:
+            Ok(CatalogSummaryDTO) on success, Err(exception) on failure.
+        """
+        return self._validated(DTO.CatalogSummaryDTO, await self._put(f"{self._catalogs_url}/{catalog_id}", payload.model_dump()))
+
+
+    async def delete_catalog(self, catalog_id: str) -> Result[DTO.CatalogSummaryDTO, Exception]:
+        """
+        DELETE /catalogs/{catalog_id}
+
+        Deletes a catalog and all its linked relationships.
+
+        Args:
+            catalog_id: Unique identifier of the catalog to delete.
+        Returns:
+            Ok(CatalogSummaryDTO) on success, Err(exception) on failure.
+        """
+        return self._validated(DTO.CatalogSummaryDTO, await self._delete(f"{self._catalogs_url}/{catalog_id}"))
 
     async def list_catalogs(self) -> Result[List[DTO.CatalogSummaryDTO], Exception]:
         """
@@ -623,6 +711,15 @@ class JubClient:
         """GET /datasources/{id} — Returns a single data source."""
         return self._validated(DTO.DataSourceDTO, await self._get(f"{self._datasources_url}/{source_id}"))
 
+    async def update_data_source(
+        self,
+        source_id: str,
+        dto: Union[DTO.DataSourceUpdateDTO, Dict],
+    ) -> Result[DTO.DataSourceDTO, Exception]:
+        """PUT /datasources/{id} — Updates mutable fields on a data source."""
+        payload = dto.model_dump() if isinstance(dto, DTO.DataSourceUpdateDTO) else dto
+        return self._validated(DTO.DataSourceDTO, await self._put(f"{self._datasources_url}/{source_id}", payload))
+
     async def delete_data_source(self, source_id: str) -> Result[DTO.DataSourceDeleteResponseDTO, Exception]:
         """DELETE /datasources/{id} — Deletes a data source and all its records."""
         return self._validated(DTO.DataSourceDeleteResponseDTO, await self._delete(f"{self._datasources_url}/{source_id}"))
@@ -751,10 +848,15 @@ class JubClient:
             await self._get(self._observatories_url, params={"page_index": page_index, "limit": limit}),
         )
 
-    async def get_observatory(self, observatory_id: str) -> Result[DTO.ObservatoryXDTO, Exception]:
-        """GET /observatories/{id} — Returns a single observatory."""
-        return self._validated(DTO.ObservatoryXDTO, await self._get(f"{self._observatories_url}/{observatory_id}"))
+    async def get_observatory(self, observatory_id: str) -> Result[DTO.ObservatoryDetailDTO, Exception]:
+        """GET /observatories/{id} — Returns a single observatory details."""
+        return self._validated(DTO.ObservatoryDetailDTO, await self._get(f"{self._observatories_url}/{observatory_id}"))
 
+    async def get_observatories_stats(self, obs_ids: List[str]) -> Result[List[DTO.ObservatoryStatsDTO], Exception]:
+        """POST /observatories/stats — Returns stats for a list of observatory IDs."""
+        return self._validated_list(DTO.ObservatoryStatsDTO, await self._post(f"{self._observatories_url}/details", {"ids": obs_ids}))
+    
+    
     async def update_observatory(
         self,
         observatory_id: str,
@@ -929,6 +1031,98 @@ class JubClient:
         x = response.unwrap() 
         return Ok(DTO.BulkProductsResponseDTO.model_validate(x))
 
+    async def link_service_to_observatory(
+        self,
+        observatory_id: str,
+        service_id: str,
+    ) -> Result[bool, Exception]:
+        """
+        POST /observatories/{observatory_id}/services
+
+        Links an existing service to the given observatory.
+
+        Args:
+            observatory_id: Unique identifier of the observatory.
+            service_id: Unique identifier of the service to link.
+
+        Returns:
+            Ok(True) on success, Err(exception) on failure.
+        """
+        payload = {"service_id": service_id}
+        result = await self._post(f"{self._observatories_url}/{observatory_id}/services", payload)
+        return Ok(result.is_ok) if result.is_ok else Err(result.unwrap_err())
+    async def unlink_service_from_observatory(
+        self, observatory_id: str, service_id: str
+    ) -> Result[bool, Exception]:
+        """
+        DELETE /observatories/{observatory_id}/services/{service_id}
+
+        Removes the link between the given service and observatory (204 No Content).
+
+        Args:
+            observatory_id: Unique identifier of the observatory.
+            service_id: Unique identifier of the service to unlink.
+
+        Returns:
+            Ok(True) on success, Err(exception) on failure.
+        """
+        result = await self._delete_no_content(f"{self._observatories_url}/{observatory_id}/services/{service_id}")
+        return Ok(result.is_ok) if result.is_ok else Err(result.unwrap_err())
+
+    async def link_datasource_to_observatory(
+        self,
+        observatory_id: str,
+        datasource_id: str,
+    ) -> Result[bool, Exception]:
+        """
+        POST /observatories/{observatory_id}/datasources
+
+        Links an existing data source to the given observatory.
+
+        Args:
+            observatory_id: Unique identifier of the observatory.
+            datasource_id: Unique identifier of the data source to link.
+
+        Returns:
+            Ok(True) on success, Err(exception) on failure.
+        """
+        payload = {"source_id": datasource_id}
+        result = await self._post(f"{self._observatories_url}/{observatory_id}/datasources", payload)
+        return Ok(result.is_ok) if result.is_ok else Err(result.unwrap_err())
+    async def unlink_datasource_from_observatory(
+        self, observatory_id: str, datasource_id: str
+    ) -> Result[bool, Exception]:
+        """
+        DELETE /observatories/{observatory_id}/datasources/{datasource_id}
+
+        Removes the link between the given data source and observatory (204 No Content).
+
+        Args:
+            observatory_id: Unique identifier of the observatory.
+            datasource_id: Unique identifier of the data source to unlink.
+        Returns:
+            Ok(True) on success, Err(exception) on failure.
+        """
+        result = await self._delete_no_content(f"{self._observatories_url}/{observatory_id}/datasources/{datasource_id}")
+        return Ok(result.is_ok) if result.is_ok else Err(result.unwrap_err())
+
+    async def list_observatory_datasources(
+        self, observatory_id: str
+    ) -> Result[List[DTO.DataSourceDTO], Exception]:
+        """GET /observatories/{id}/datasources — Lists all data sources linked to an observatory."""
+        return self._validated_list(
+            DTO.DataSourceDTO,
+            await self._get(f"{self._observatories_url}/{observatory_id}/datasources"),
+        )
+
+    async def list_observatory_services(
+        self, observatory_id: str
+    ) -> Result[List[DTO.ServiceSimpleDTO], Exception]:
+        """GET /observatories/{id}/services — Lists all services linked to an observatory."""
+        return self._validated_list(
+            DTO.ServiceSimpleDTO,
+            await self._get(f"{self._observatories_url}/{observatory_id}/services"),
+        )
     # ── Products  /products ────────────────────────────────────
 
     async def create_product(
@@ -1039,6 +1233,166 @@ class JubClient:
             DTO.ProductUploadResponseDTO,
             await self._post(url=f"{self._products_url}/{product_id}/upload", files=files, headers={}),
         )
+
+    def register_upload(self, product_id: str, payload: Union[str, bytes]) -> Result[int, Exception]:
+        """
+        Enqueues a product upload job without executing it.
+
+        Call wait_uploads() to process all registered jobs.
+
+        Args:
+            product_id: Product to upload to.
+            payload: File path (str) or raw bytes.
+
+        Returns:
+            Ok(pending_count) on success, Err(TypeError) if payload type is invalid.
+        """
+        if not isinstance(payload, (str, bytes)):
+            return Err(TypeError(f"payload must be str or bytes, got {type(payload).__name__}"))
+        self._upload_queue.append(_UploadJob(product_id=product_id, payload=payload))
+        count = len(self._upload_queue)
+        self._upload_logger.debug({"event": "job_registered", "product_id": product_id, "pending_count": count})
+        return Ok(count)
+
+    @check_auth
+    async def wait_uploads(self, workers: int = 1, max_retries: int = 1) -> Result[BulkUploadResult, Exception]:
+        """
+        Processes all jobs registered via register_upload().
+
+        Runs up to `workers` uploads concurrently. Failed jobs are retried up to
+        `max_retries` times before being recorded as permanent failures. The
+        pending queue is drained and cleared on each call.
+
+        Args:
+            workers: Number of concurrent upload coroutines (default 1).
+            max_retries: Maximum upload attempts per job (default 1 = no retry).
+
+        Returns:
+            Ok(BulkUploadResult) always; failed jobs are in result.failed, not Err.
+            Err(Exception) only if another wait_uploads() call is already running.
+        """
+        t0_wait_uploads = T.monotonic()
+        if self._upload_lock.locked():
+            return Err(Exception("wait_uploads is already running"))
+
+        async with self._upload_lock:
+            jobs = self._upload_queue[:]
+            self._upload_queue.clear()
+
+            if not jobs:
+                return Ok(BulkUploadResult())
+
+            total = len(jobs)
+            queue: asyncio.Queue = asyncio.Queue()
+            for job in jobs:
+                await queue.put(job)
+
+            result = BulkUploadResult()
+            completed = 0
+
+            self._upload_logger.info({
+                "event": "bulk_start",
+                "total_jobs": total,
+                "workers": workers,
+                "max_retries": max_retries,
+            })
+
+            async def _worker():
+                nonlocal completed
+                t0_global = T.monotonic()
+                while True:
+                    t0 = T.monotonic()
+                    job: _UploadJob = await queue.get()
+                    self._upload_logger.debug({
+                        "event": "job_started",
+                        "product_id": job.product_id,
+                        "attempt": job.attempt + 1,
+                    })
+                    upload_result = await self.upload_product(job.product_id, job.payload)
+                    job.attempt += 1
+                    if upload_result.is_ok:
+                        result.succeeded.append(upload_result.unwrap())
+                        completed += 1
+                        self._upload_logger.info({
+                            "event": "job_succeeded",
+                            "product_id": job.product_id,
+                            "attempt": job.attempt,
+                            "completed": completed,
+                            "total": total,
+                            "pct_complete": round(completed / total * 100, 1),
+                            "job_duration_sec": (T.monotonic() - t0),
+                            "duration_global_sec": (T.monotonic() - t0_global),
+                        })
+                    else:
+                        error_msg = str(upload_result.unwrap_err())
+                        if job.attempt < max_retries:
+                            self._upload_logger.info({
+                                "event": "job_failed_retry",
+                                "product_id": job.product_id,
+                                "attempt": job.attempt,
+                                "error": error_msg,
+                                "retries_left": max_retries - job.attempt,
+                            })
+                            await queue.put(job)
+                        else:
+                            result.failed.append(FailedUploadEntry(
+                                product_id=job.product_id,
+                                attempts=job.attempt,
+                                last_error=error_msg,
+                            ))
+                            completed += 1
+                            self._upload_logger.info({
+                                "event": "job_failed_permanent",
+                                "product_id": job.product_id,
+                                "attempt": job.attempt,
+                                "error": error_msg,
+                                "completed": completed,
+                                "total": total,
+                                "pct_complete": round(completed / total * 100, 1),
+                            })
+                    queue.task_done()
+
+            worker_tasks = [asyncio.create_task(_worker()) for _ in range(workers)]
+            await queue.join()
+            for t in worker_tasks:
+                t.cancel()
+            await asyncio.gather(*worker_tasks, return_exceptions=True)
+
+            self._upload_logger.info({
+                "event": "bulk_complete",
+                "total": total,
+                "succeeded_count": len(result.succeeded),
+                "failed_count": len(result.failed),
+                "pct_success": round(len(result.succeeded) / total * 100, 1),
+                "duration_sec": (T.monotonic() - t0_wait_uploads),
+            })
+            return Ok(result)
+
+    @check_auth
+    async def bulk_upload_products(
+        self,
+        uploads: List[Tuple[str, Union[str, bytes]]],
+        workers: int = 1,
+        max_retries: int = 1,
+    ) -> Result[BulkUploadResult, Exception]:
+        """
+        Registers and immediately executes a batch of product uploads.
+
+        Convenience wrapper around register_upload() + wait_uploads().
+
+        Args:
+            uploads: List of (product_id, file_path_or_bytes) pairs.
+            workers: Concurrent upload coroutines (default 1).
+            max_retries: Attempts per job before permanent failure (default 1).
+
+        Returns:
+            Ok(BulkUploadResult) or Err if a payload type is invalid.
+        """
+        for product_id, payload in uploads:
+            reg = self.register_upload(product_id, payload)
+            if reg.is_err:
+                return reg
+        return await self.wait_uploads(workers=workers, max_retries=max_retries)
 
     async def get_product_tag_details(self, product_id: str) -> Result[List[DTO.CatalogItemXResponseDTO], Exception]:
         """GET /products/{product_id}/tags/details — Returns full catalog items for each tag."""

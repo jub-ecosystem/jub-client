@@ -267,6 +267,9 @@ class UserPreferencesDTO(BaseModel):
 
 # ── Catalog DTOs ───────────────────────────────────────────────
 
+class CatalogUpdateDTO(BaseModel):
+    name: Optional[str] = Field(default=None, description="Updated catalog name")
+    description: Optional[str] = Field(default=None, description="Updated description")
 
 class CatalogItemAliasCreateDTO(BaseModel):
     """
@@ -468,6 +471,35 @@ class DataSourceQueryDTO(BaseModel):
 
 
 # ── Observatory DTOs ───────────────────────────────────────────
+class ServiceSnapshotDTO(BaseModel):
+    service_id: str
+    name: str
+    provider: Optional[str] = None
+class DataSourceSnapshotDTO(BaseModel):
+    source_id: str
+    name: str
+class ObservatoryStatsDTO(BaseModel):
+    observatory_id: str
+    avg_rating: float = Field(default=0.0)
+    review_count: int = Field(default=0)
+    services: List[ServiceSnapshotDTO] = Field(default_factory=list)
+    data_sources: List[DataSourceSnapshotDTO] = Field(default_factory=list)
+
+class ObservatoryXDTO(BaseModel):
+    """Response for create / get / update / list observatories."""
+    observatory_id: str
+    title: str
+    description: str = ""
+    image_url: Optional[str] = None
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    created_at: str
+    updated_at: str
+    
+class ObservatoryDetailDTO(ObservatoryXDTO):
+    services: List[ServiceSnapshotDTO] = Field(default_factory=list)
+    data_sources: List[DataSourceSnapshotDTO] = Field(default_factory=list)
+    avg_rating: float = Field(default=0.0, description="Average user rating for this observatory, from 0.0 to 5.0")
+    review_count: int = Field(default=0, description="Total number of user reviews for this observatory")
 
 
 class ObservatoryCreateDTO(BaseModel):
@@ -762,15 +794,6 @@ class AuthResponseDTO(BaseModel):
 # ── Catalogs (response) ────────────────────────────────────────
 
 
-class ObservatoryXDTO(BaseModel):
-    """Response for create / get / update / list observatories."""
-    observatory_id: str
-    title: str
-    description: str = ""
-    image_url: Optional[str] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-    created_at: str
-    updated_at: str
 
 
 class ObservatorySetupResponseDTO(BaseModel):
@@ -935,6 +958,14 @@ class ProductUploadResponseDTO(BaseModel):
     job_id: str
     product_id: str
     status: str = "queued"
+
+
+class DataSourceUpdateDTO(BaseModel):
+    """Payload for PUT /datasources/{source_id}. All fields are optional."""
+    name: Optional[str] = None
+    description: Optional[str] = None
+    connection_uri: Optional[str] = None
+    bucket_id: Optional[str] = None
 
 
 class DataSourceDeleteResponseDTO(BaseModel):
@@ -1485,3 +1516,12 @@ class ServiceDeleteResponseDTO(BaseModel):
     deleted: bool
     service_id: str
     cascade: Dict[str, Any] = Field(default_factory=dict)
+
+
+class ServiceSimpleDTO(BaseModel):
+    """Lightweight service entry returned by GET /observatories/{id}/services."""
+    service_id: str
+    name: str
+    description: str = ""
+    provider: Optional[str] = None
+    public: bool = False
