@@ -14,6 +14,7 @@ async def main():
             password = os.environ.get("JUB_PASSWORD", "invitado"),
         )\
         .with_timeouts(timeout=60, write_timeout=120, read_timeout=10)\
+        .with_upload_registry("/jub/registry.json")\
         .build()
     
     #  Paso 2: Manejar el resultado de la autenticación
@@ -73,15 +74,15 @@ async def main():
 
     # Paso 8: Indexar productos
     N= 10
-    group_ages = ["AG_00_04","AG_05_14","AG_15_24","AG_25_34","AG_35_44","AG_45_54","AG_55_64","AG_65"]
+    # group_ages = ["AG_00_04","AG_05_14","AG_15_24","AG_25_34","AG_35_44","AG_45_54","AG_55_64","AG_65"]
     sexes  = ["MALE","FEMALE"]
-    temporal = ["Y2000","Y2001","Y2004"]
+    # temporal = ["Y2000","Y2001","Y2004"]
 
     for i in range(N):
         tags = [
-            group_ages[i % len(group_ages)],
+            # group_ages[i % len(group_ages)],
             sexes[i % len(sexes)],
-            temporal[i % len(temporal)],
+            # temporal[i % len(temporal)],
         ]
         product_id = f"producto-de-prueba-{iid}-{i}"
         product_result = await client.create_product(

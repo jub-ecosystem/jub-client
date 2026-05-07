@@ -29,7 +29,9 @@ import time as T
 import os
 import json
 import logging
+import tempfile
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import httpx
@@ -59,6 +61,101 @@ class FailedUploadEntry:
 class BulkUploadResult:
     succeeded: List[DTO.ProductUploadResponseDTO] = field(default_factory=list)
     failed: List[FailedUploadEntry] = field(default_factory=list)
+    skipped: List[str] = field(default_factory=list)
+
+
+class UploadRegistry:
+    """File-backed registry that persists upload outcomes across sessions.
+
+    The registry is written atomically (write-to-tmp + os.replace) so a crash
+    mid-write never leaves a corrupt file.  Each entry looks like::
+
+        "<product_id>": {
+            "status": "pending" | "succeeded" | "failed",
+            "job_id": "<str or null>",
+            "attempts": 2,
+            "last_error": "<str or null>",
+            "timestamp": "<ISO-8601>"
+        }
+    """
+
+    def __init__(self, path: str) -> None:
+        self._path = path
+        self._data: Dict[str, Dict] = {}
+        self._load()
+
+    def _load(self) -> None:
+        if os.path.exists(self._path):
+            try:
+                with open(self._path, "r") as f:
+                    self._data = json.load(f)
+            except (json.JSONDecodeError, OSError):
+                self._data = {}
+
+    def _save(self) -> None:
+        dir_ = os.path.dirname(os.path.abspath(self._path))
+        fd, tmp = tempfile.mkstemp(dir=dir_, suffix=".tmp")
+        try:
+            with os.fdopen(fd, "w") as f:
+                json.dump(self._data, f, indent=2)
+            os.replace(tmp, self._path)
+        except Exception:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
+
+    def _now(self) -> str:
+        return datetime.now(timezone.utc).isoformat()
+
+    def is_done(self, product_id: str) -> bool:
+        return self._data.get(product_id, {}).get("status") == "succeeded"
+
+    def mark_pending(self, product_id: str) -> None:
+        prev = self._data.get(product_id, {})
+        self._data[product_id] = {
+            "status": "pending",
+            "job_id": None,
+            "attempts": prev.get("attempts", 0),
+            "last_error": None,
+            "timestamp": self._now(),
+        }
+        self._save()
+
+    def mark_succeeded(self, product_id: str, job_id: Optional[str]) -> None:
+        prev = self._data.get(product_id, {})
+        self._data[product_id] = {
+            "status": "succeeded",
+            "job_id": job_id,
+            "attempts": prev.get("attempts", 0) + 1,
+            "last_error": None,
+            "timestamp": self._now(),
+        }
+        self._save()
+
+    def mark_failed(self, product_id: str, error: str, attempts: int) -> None:
+        self._data[product_id] = {
+            "status": "failed",
+            "job_id": None,
+            "attempts": attempts,
+            "last_error": error,
+            "timestamp": self._now(),
+        }
+        self._save()
+
+    def clear(self) -> None:
+        self._data = {}
+        self._save()
+
+    def reset_failed(self) -> int:
+        """Remove all failed entries so they can be re-queued. Returns count removed."""
+        keys = [k for k, v in self._data.items() if v.get("status") == "failed"]
+        for k in keys:
+            del self._data[k]
+        if keys:
+            self._save()
+        return len(keys)
 
 
 class JubClientBuilder:
@@ -77,23 +174,36 @@ class JubClientBuilder:
         self.api_url = api_url
         self.username = username
         self.password = password
+        self._upload_registry_path: Optional[str] = None
         self.client = JubClient(api_url, username, password)
-    
+
     def with_api_url(self, api_url: str) -> JubClientBuilder:
         self.api_url = api_url
         return self
-    def with_credentials(self, username: str,password:str) -> JubClientBuilder:
-        self.username = username 
+
+    def with_credentials(self, username: str, password: str) -> JubClientBuilder:
+        self.username = username
         self.password = password
         return self
-    def with_timeouts(self, timeout:int = 30, write_timeout:int = 120, read_timeout:int = 10) -> JubClientBuilder:
+
+    def with_timeouts(self, timeout: int = 30, write_timeout: int = 120, read_timeout: int = 10) -> JubClientBuilder:
         self.client.timeout = timeout
         self.client.write_timeout = write_timeout
         self.client.read_timeout = read_timeout
         return self
 
+    def with_upload_registry(self, path: str) -> JubClientBuilder:
+        """Enable persistent upload tracking. Completed uploads will be skipped on re-run."""
+        self._upload_registry_path = path
+        return self
+
     async def build(self) -> Result[JubClient, Exception]:
-        client = JubClient(self.api_url, self.username, self.password)
+        client = JubClient(
+            self.api_url,
+            self.username,
+            self.password,
+            upload_registry_path=self._upload_registry_path,
+        )
         auth_result = await client.authenticate()
         if auth_result.is_ok:
             return Ok(client)
@@ -124,16 +234,17 @@ class JubClient:
             print(result.unwrap())
     """
 
-    def __init__(self, 
-                 api_url: str, 
-                 username: str, 
+    def __init__(self,
+                 api_url: str,
+                 username: str,
                  password: str,
                  scope: Optional[str] = None,
                  token_expiration: Optional[str] = None,
                  renew_token: bool = True,
-                 write_timeout:int = 120,
-                 read_timeout:int = 10,
-                 timeout:int = 30
+                 write_timeout: int = 120,
+                 read_timeout: int = 10,
+                 timeout: int = 30,
+                 upload_registry_path: Optional[str] = None,
     ):
         base = f"{api_url.rstrip('/')}/api/v2"
         self.base_url = base
@@ -166,7 +277,11 @@ class JubClient:
         self.__renew_token = renew_token  # Automatically renew token on expiration
 
         self._upload_queue: List[_UploadJob] = []
+        self._skipped_ids: List[str] = []
         self._upload_lock = asyncio.Lock()
+        self._upload_registry: Optional[UploadRegistry] = (
+            UploadRegistry(upload_registry_path) if upload_registry_path else None
+        )
         self._upload_logger = Log(
             name="jub-uploads",
             to_file=False,
@@ -1224,9 +1339,14 @@ class JubClient:
             file_content = file_path
             filename = f"{product_id}_upload"
         else:
-            filename = os.path.basename(file_path)
-            with open(file_path, "rb") as file:
-                file_content = file.read()
+            if os.path.isdir(file_path):
+                return Err(IsADirectoryError(f"Expected a file path, got a directory: {file_path!r}"))
+            try:
+                filename = os.path.basename(file_path)
+                with open(file_path, "rb") as file:
+                    file_content = file.read()
+            except OSError as exc:
+                return Err(exc)
 
         files = {"file": (filename, file_content, "application/octet-stream")}
         return self._validated(
@@ -1237,6 +1357,9 @@ class JubClient:
     def register_upload(self, product_id: str, payload: Union[str, bytes]) -> Result[int, Exception]:
         """
         Enqueues a product upload job without executing it.
+
+        If an UploadRegistry is active and the product already succeeded in a
+        prior session, the job is silently skipped and logged instead of queued.
 
         Call wait_uploads() to process all registered jobs.
 
@@ -1249,6 +1372,16 @@ class JubClient:
         """
         if not isinstance(payload, (str, bytes)):
             return Err(TypeError(f"payload must be str or bytes, got {type(payload).__name__}"))
+        if isinstance(payload, str) and os.path.isdir(payload):
+            return Err(IsADirectoryError(f"Expected a file path, got a directory: {payload!r}"))
+        if self._upload_registry and self._upload_registry.is_done(product_id):
+            self._skipped_ids.append(product_id)
+            self._upload_logger.info({
+                "event": "job_skipped_already_uploaded",
+                "product_id": product_id,
+                "skipped_count": len(self._skipped_ids),
+            })
+            return Ok(len(self._upload_queue))
         self._upload_queue.append(_UploadJob(product_id=product_id, payload=payload))
         count = len(self._upload_queue)
         self._upload_logger.debug({"event": "job_registered", "product_id": product_id, "pending_count": count})
@@ -1278,21 +1411,36 @@ class JubClient:
         async with self._upload_lock:
             jobs = self._upload_queue[:]
             self._upload_queue.clear()
+            skipped = self._skipped_ids[:]
+            self._skipped_ids.clear()
 
             if not jobs:
-                return Ok(BulkUploadResult())
+                result = BulkUploadResult(skipped=skipped)
+                if skipped:
+                    self._upload_logger.info({
+                        "event": "bulk_complete",
+                        "total": 0,
+                        "succeeded_count": 0,
+                        "failed_count": 0,
+                        "skipped_count": len(skipped),
+                        "pct_success": 100.0,
+                        "duration_sec": (T.monotonic() - t0_wait_uploads),
+                    })
+                return Ok(result)
 
             total = len(jobs)
             queue: asyncio.Queue = asyncio.Queue()
             for job in jobs:
                 await queue.put(job)
 
-            result = BulkUploadResult()
+            result = BulkUploadResult(skipped=skipped)
             completed = 0
+            registry = self._upload_registry
 
             self._upload_logger.info({
                 "event": "bulk_start",
                 "total_jobs": total,
+                "skipped_count": len(skipped),
                 "workers": workers,
                 "max_retries": max_retries,
             })
@@ -1308,11 +1456,16 @@ class JubClient:
                         "product_id": job.product_id,
                         "attempt": job.attempt + 1,
                     })
+                    if registry:
+                        registry.mark_pending(job.product_id)
                     upload_result = await self.upload_product(job.product_id, job.payload)
                     job.attempt += 1
                     if upload_result.is_ok:
-                        result.succeeded.append(upload_result.unwrap())
+                        dto = upload_result.unwrap()
+                        result.succeeded.append(dto)
                         completed += 1
+                        if registry:
+                            registry.mark_succeeded(job.product_id, getattr(dto, "job_id", None))
                         self._upload_logger.info({
                             "event": "job_succeeded",
                             "product_id": job.product_id,
@@ -1341,6 +1494,8 @@ class JubClient:
                                 last_error=error_msg,
                             ))
                             completed += 1
+                            if registry:
+                                registry.mark_failed(job.product_id, error_msg, job.attempt)
                             self._upload_logger.info({
                                 "event": "job_failed_permanent",
                                 "product_id": job.product_id,
@@ -1363,6 +1518,7 @@ class JubClient:
                 "total": total,
                 "succeeded_count": len(result.succeeded),
                 "failed_count": len(result.failed),
+                "skipped_count": len(skipped),
                 "pct_success": round(len(result.succeeded) / total * 100, 1),
                 "duration_sec": (T.monotonic() - t0_wait_uploads),
             })
@@ -1393,6 +1549,30 @@ class JubClient:
             if reg.is_err:
                 return reg
         return await self.wait_uploads(workers=workers, max_retries=max_retries)
+
+    def clear_upload_registry(self) -> Result[None, Exception]:
+        """Wipe all entries from the upload registry file.
+
+        Returns:
+            Ok(None) on success, Err if no registry is configured.
+        """
+        if not self._upload_registry:
+            return Err(Exception("No upload registry is configured on this client."))
+        self._upload_registry.clear()
+        self._upload_logger.info({"event": "registry_cleared"})
+        return Ok(None)
+
+    def reset_failed_uploads(self) -> Result[int, Exception]:
+        """Remove all 'failed' entries from the registry so they can be re-queued.
+
+        Returns:
+            Ok(count) of entries removed, Err if no registry is configured.
+        """
+        if not self._upload_registry:
+            return Err(Exception("No upload registry is configured on this client."))
+        count = self._upload_registry.reset_failed()
+        self._upload_logger.info({"event": "registry_failed_reset", "removed_count": count})
+        return Ok(count)
 
     async def get_product_tag_details(self, product_id: str) -> Result[List[DTO.CatalogItemXResponseDTO], Exception]:
         """GET /products/{product_id}/tags/details — Returns full catalog items for each tag."""
