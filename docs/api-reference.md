@@ -27,6 +27,7 @@ JubClient(
     write_timeout: int = 120,
     read_timeout: int = 10,
     timeout: int = 30,
+    upload_registry_path: Optional[str] = None,
 )
 ```
 
@@ -35,34 +36,43 @@ JubClient(
 | `api_url` | `str` | — | Base URL of the JUB API (e.g. `http://localhost:5000`) |
 | `username` | `str` | — | Account login handle |
 | `password` | `str` | — | Account password |
-| `scope` | `str` | `"jub"` | JWT scope |
-| `token_expiration` | `str` | `"1h"` | JWT expiration string (e.g. `"2h"`, `"30m"`) |
-| `renew_token` | `bool` | `True` | Automatically renew the token when it expires |
-| `write_timeout` | `int` | `120` | Seconds before a write (upload) request times out |
+| `scope` | `str` | `"jub"` | JWT scope sent during login |
+| `token_expiration` | `str` | `"1h"` | Requested JWT lifetime (e.g. `"2h"`, `"30m"`) |
+| `renew_token` | `bool` | `True` | Automatically re-authenticate when the token expires |
+| `write_timeout` | `int` | `120` | Seconds before a write (upload) request times out; increase for large files |
 | `read_timeout` | `int` | `10` | Seconds before a read response times out |
 | `timeout` | `int` | `30` | Default connect/pool timeout in seconds |
+| `upload_registry_path` | `str \| None` | `None` | Path to the upload registry JSON file; `None` disables persistence entirely — see [Upload registry](#upload-registry) |
 
 ---
 
 ## JubClientBuilder
 
-A builder that authenticates during construction and returns `Err` if authentication fails.
+A fluent builder that constructs a `JubClient` and fully authenticates it before returning the result. Use it instead of calling `JubClient()` directly when you want to chain configuration in one expression and have authentication failures surfaced as `Err` rather than a silent uninitialized state.
 
 ```python
-result = await JubClientBuilder(
-    api_url  = "http://localhost:5000",
-    username = "admin",
-    password = "secret",
-).build()
+result = await (
+    JubClientBuilder()
+    .with_api_url("http://localhost:5000")
+    .with_credentials("admin", "secret")
+    .with_timeouts(timeout=30, write_timeout=180, read_timeout=15)
+    .with_upload_registry("/data/jobs/uploads.json")
+    .build()
+)
 
-client = result.unwrap()
+if result.is_ok:
+    client = result.unwrap()
+else:
+    print("Auth failed:", result.unwrap_err())
 ```
 
-| Method | Description |
-|---|---|
-| `with_api_url(url)` | Override the API URL |
-| `with_credentials(username, password)` | Override credentials |
-| `build()` | Authenticate and return `Result[JubClient, Exception]` |
+| Method | Returns | Description |
+|---|---|---|
+| `with_api_url(url)` | `JubClientBuilder` | Sets the API base URL |
+| `with_credentials(username, password)` | `JubClientBuilder` | Sets the login credentials |
+| `with_timeouts(timeout, write_timeout, read_timeout)` | `JubClientBuilder` | Overrides the three HTTP timeout values |
+| `with_upload_registry(path)` | `JubClientBuilder` | Enables the upload registry at the given file path; the file is created automatically if it does not exist — see [Upload registry](#upload-registry) |
+| `build()` | `Result[JubClient, Exception]` | Authenticates and returns a ready-to-use client; returns `Err` if authentication fails |
 
 ---
 
@@ -1231,6 +1241,13 @@ async def upload_product(
 
 **Returns:** `Ok(ProductUploadResponseDTO)` — contains `job_id`, `product_id`, and `status`.
 
+**Error cases:**
+
+| Error | Condition |
+|---|---|
+| `Err(IsADirectoryError)` | `file_path` is a string pointing to a directory instead of a file |
+| `Err(OSError)` | Any other IO failure: file not found, permission denied, etc. |
+
 ```python
 result = await client.upload_product("prod_123", "charts/mortality.html")
 upload = result.unwrap()
@@ -1278,7 +1295,8 @@ class FailedUploadEntry:
 @dataclass
 class BulkUploadResult:
     succeeded: List[ProductUploadResponseDTO]  # Successful job responses
-    failed: List[FailedUploadEntry]            # Permanent failures
+    failed:    List[FailedUploadEntry]         # Permanent failures
+    skipped:   List[str]                       # product_ids skipped because the registry recorded them as already succeeded
 ```
 
 ---
@@ -1294,12 +1312,21 @@ def register_upload(
 
 Enqueues a product upload job without executing it. This method is synchronous.
 
+If an `UploadRegistry` is active and the product already has a `succeeded` entry from a prior session, the job is **skipped** — it is never added to the queue and the `product_id` is recorded in `BulkUploadResult.skipped` instead. A `job_skipped_already_uploaded` log event is emitted immediately at INFO level.
+
 | Parameter | Type | Description |
 |---|---|---|
 | `product_id` | `str` | Product to upload to |
 | `payload` | `str` or `bytes` | File path on disk (`str`) or raw file bytes |
 
-**Returns:** `Ok(pending_count)` — number of jobs currently queued. `Err(TypeError)` if `payload` type is invalid.
+**Returns:** `Ok(pending_count)` — number of jobs currently in the queue.
+
+**Error cases:**
+
+| Error | Condition |
+|---|---|
+| `Err(TypeError)` | `payload` is not `str` or `bytes` |
+| `Err(IsADirectoryError)` | `payload` is a string pointing to a directory instead of a file |
 
 ```python
 client.register_upload("prod_1", "/data/file1.csv")
@@ -1369,6 +1396,114 @@ result = (await client.bulk_upload_products(
     max_retries=2,
 )).unwrap()
 ```
+
+---
+
+### `clear_upload_registry`
+
+```python
+def clear_upload_registry() -> Result[None, Exception]
+```
+
+Wipes every entry from the upload registry file. The next run will treat every product as new, even those that previously succeeded.
+
+**Returns:** `Ok(None)` on success. `Err(Exception)` if no `upload_registry_path` was given to this client.
+
+```python
+client.clear_upload_registry().unwrap()
+```
+
+---
+
+### `reset_failed_uploads`
+
+```python
+def reset_failed_uploads() -> Result[int, Exception]
+```
+
+Removes only the `failed` entries from the registry so they can be re-registered and retried on the next run. `succeeded` entries are left untouched, so products that already completed will still be skipped.
+
+| Returns | Condition |
+|---|---|
+| `Ok(count)` | Number of failed entries removed |
+| `Err(Exception)` | No `upload_registry_path` was given to this client |
+
+```python
+removed = client.reset_failed_uploads().unwrap()
+print(f"Cleared {removed} failed entries — they will be retried on next run")
+```
+
+---
+
+## Upload registry
+
+The upload registry is an opt-in, file-backed mechanism that persists the outcome of every product upload across Python sessions. Enable it by passing `upload_registry_path` to the constructor or calling `.with_upload_registry(path)` on the builder.
+
+### Purpose
+
+| Goal | How it works |
+|---|---|
+| **Idempotency** | `register_upload()` checks the registry before queuing — if the product already `succeeded`, the job is skipped |
+| **Resumability** | Re-running the same script continues from where it left off; only products that never succeeded are attempted again |
+| **Crash safety** | The registry file is written atomically (`os.replace`) so a crash mid-write never corrupts it |
+
+### Registry file format
+
+The registry is a plain JSON object. Each key is a `product_id`:
+
+```json
+{
+  "prod-abc123": {
+    "status": "succeeded",
+    "job_id": "job-xyz",
+    "attempts": 1,
+    "last_error": null,
+    "timestamp": "2026-05-07T14:32:10.123456+00:00"
+  },
+  "prod-def456": {
+    "status": "failed",
+    "job_id": null,
+    "attempts": 3,
+    "last_error": "500 Internal Server Error",
+    "timestamp": "2026-05-07T14:35:02.654321+00:00"
+  },
+  "prod-ghi789": {
+    "status": "pending",
+    "job_id": null,
+    "attempts": 0,
+    "last_error": null,
+    "timestamp": "2026-05-07T14:34:58.000000+00:00"
+  }
+}
+```
+
+| Field | Values | Meaning |
+|---|---|---|
+| `status` | `pending` / `succeeded` / `failed` | Current lifecycle state |
+| `job_id` | string or `null` | Background job ID returned by the API on success |
+| `attempts` | integer | Total upload attempts so far |
+| `last_error` | string or `null` | Error message from the last failed attempt |
+| `timestamp` | ISO-8601 UTC | When this entry was last written |
+
+!!! note "Pending entries on restart"
+    A `pending` entry means the worker picked up the job but the process was killed before a final outcome was recorded. On the next run these entries are **not** skipped — they are retried, which is the safe behaviour since it is unknown whether the upload completed on the server side.
+
+### Log events
+
+All events are emitted through the `jub-uploads` logger as structured JSON.
+
+| Event | Level | When emitted |
+|---|---|---|
+| `job_registered` | DEBUG | Job successfully added to the queue |
+| `job_skipped_already_uploaded` | INFO | Registry has a `succeeded` entry — job skipped |
+| `bulk_start` | INFO | `wait_uploads()` starts; includes `total_jobs`, `skipped_count`, `workers`, `max_retries` |
+| `job_started` | DEBUG | Worker picked up a job; includes current attempt number |
+| `job_succeeded` | INFO | Upload completed; includes attempt, progress %, and durations |
+| `job_failed_retry` | INFO | Upload failed, retries remain; includes `retries_left` |
+| `job_failed_permanent` | INFO | All retries exhausted; job recorded as permanently failed |
+| `bulk_complete` | INFO | All jobs finished; includes `succeeded_count`, `failed_count`, `skipped_count`, duration |
+| `registry_cleared` | INFO | `clear_upload_registry()` was called |
+| `registry_failed_reset` | INFO | `reset_failed_uploads()` was called; includes `removed_count` |
 
 ---
 
