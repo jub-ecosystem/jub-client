@@ -3,6 +3,7 @@ name = "jub"
 version = "0.1.0a4"
 description = ""
 authors = ["Ignacio Castillo <jcastillo@mictlanx.com>"]
+license = "GPL-3.0-or-later"
 readme = "README.md"
 packages = [{include = "jub"}]
 
