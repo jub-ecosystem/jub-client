@@ -45,6 +45,12 @@ cd jub-client
 poetry install
 ```
 
+To also install the documentation tooling (zensical, mkdocstrings):
+
+```bash
+poetry install --with docs
+```
+
 Activate the virtual environment:
 
 ```bash
