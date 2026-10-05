@@ -105,9 +105,9 @@ async def signup(dto: SignUpDTO) -> Result[AuthResponseDTO, Exception]
 
 | Parameter | Type | Description |
 |---|---|---|
-| `dto` | `SignUpDTO` | Registration payload |
+| `dto` | [`SignUpDTO`](dto-reference.md#signupdto) | Registration payload |
 
-**`SignUpDTO` fields:**
+**[`SignUpDTO`](dto-reference.md#signupdto) fields:**
 
 | Field | Type | Required | Description |
 |---|---|---|---|
@@ -117,7 +117,7 @@ async def signup(dto: SignUpDTO) -> Result[AuthResponseDTO, Exception]
 | `first_name` | `str` | No | First name |
 | `last_name` | `str` | No | Last name |
 
-**Returns:** `Ok(AuthResponseDTO)` — contains `access_token` and `user_profile`.
+**Returns:** <code>Ok(<a href="../dto-reference/#authresponsedto">AuthResponseDTO</a>)</code> — contains `access_token` and `user_profile`.
 
 ```python
 result = await client.signup(DTO.SignUpDTO(
@@ -139,7 +139,7 @@ async def get_current_user() -> Result[UserProfileDTO, Exception]
 
 `GET /users/me` — Returns the profile of the currently authenticated user.
 
-**Returns:** `Ok(UserProfileDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#userprofiledto">UserProfileDTO</a>)</code>.
 
 ```python
 result = await client.get_current_user()
@@ -161,7 +161,7 @@ async def get_user_settings(user_id: str) -> Result[UserPreferencesDTO, Exceptio
 |---|---|---|
 | `user_id` | `str` | Target user identifier |
 
-**Returns:** `Ok(UserPreferencesDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#userpreferencesdto">UserPreferencesDTO</a>)</code>.
 
 ---
 
@@ -179,17 +179,17 @@ async def update_user_settings(
 | Parameter | Type | Description |
 |---|---|---|
 | `user_id` | `str` | Target user identifier |
-| `prefs` | `UserPreferencesDTO` | New preferences payload |
+| `prefs` | [`UserPreferencesDTO`](dto-reference.md#userpreferencesdto) | New preferences payload |
 
-**`UserPreferencesDTO` fields:**
+**[`UserPreferencesDTO`](dto-reference.md#userpreferencesdto) fields:**
 
 | Field | Type | Description |
 |---|---|---|
-| `appearance` | `AppearanceSettingsDTO` | Theme and font settings |
-| `exploration` | `ExplorationSettingsDTO` | Default view and pagination |
-| `export` | `ExportSettingsDTO` | Default export format and metadata flag |
+| `appearance` | [`AppearanceSettingsDTO`](dto-reference.md#appearancesettingsdto) | Theme and font settings |
+| `exploration` | [`ExplorationSettingsDTO`](dto-reference.md#explorationsettingsdto) | Default view and pagination |
+| `export` | [`ExportSettingsDTO`](dto-reference.md#exportsettingsdto) | Default export format and metadata flag |
 
-**Returns:** `Ok(UserPreferencesDTO)` — the saved preferences.
+**Returns:** <code>Ok(<a href="../dto-reference/#userpreferencesdto">UserPreferencesDTO</a>)</code> — the saved preferences.
 
 ---
 
@@ -207,9 +207,9 @@ async def create_catalog(
 
 | Parameter | Type | Description |
 |---|---|---|
-| `dto` | `CatalogCreateDTO` or `dict` | Catalog creation payload |
+| `dto` | [`CatalogCreateDTO`](dto-reference.md#catalogcreatedto) or `dict` | Catalog creation payload |
 
-**`CatalogCreateDTO` fields:**
+**[`CatalogCreateDTO`](dto-reference.md#catalogcreatedto) fields:**
 
 | Field | Type | Required | Description |
 |---|---|---|---|
@@ -217,9 +217,9 @@ async def create_catalog(
 | `value` | `str` | Yes | Stored query value (UPPER_SNAKE_CASE) |
 | `catalog_type` | `str` | Yes | `SPATIAL`, `TEMPORAL`, or `INTEREST` |
 | `description` | `str` | No | Contextual description |
-| `items` | `List[CatalogItemCreateDTO]` | No | Items to create inline |
+| `items` | <code>List[<a href="../dto-reference/#catalogitemcreatedto">CatalogItemCreateDTO</a>]</code> | No | Items to create inline |
 
-**`CatalogItemCreateDTO` fields:**
+**[`CatalogItemCreateDTO`](dto-reference.md#catalogitemcreatedto) fields:**
 
 | Field | Type | Required | Description |
 |---|---|---|---|
@@ -229,10 +229,10 @@ async def create_catalog(
 | `value_type` | `str` | Yes | `STRING`, `NUMBER`, `BOOLEAN`, or `DATETIME` |
 | `description` | `str` | No | Contextual description |
 | `temporal_value` | `str` | No | ISO 8601 datetime (temporal items only) |
-| `aliases` | `List[CatalogItemAliasCreateDTO]` | No | Alternative values |
-| `children` | `List[CatalogItemCreateDTO]` | No | Nested child items |
+| `aliases` | <code>List[<a href="../dto-reference/#catalogitemaliascreatedto">CatalogItemAliasCreateDTO</a>]</code> | No | Alternative values |
+| `children` | <code>List[<a href="../dto-reference/#catalogitemcreatedto">CatalogItemCreateDTO</a>]</code> | No | Nested child items |
 
-**Returns:** `Ok(CatalogCreatedResponseDTO)` — contains `catalog_id`.
+**Returns:** <code>Ok(<a href="../dto-reference/#catalogcreatedresponsedto">CatalogCreatedResponseDTO</a>)</code> — contains `catalog_id`.
 
 ```python
 result = await client.create_catalog(DTO.CatalogCreateDTO(
@@ -266,9 +266,9 @@ async def create_catalog_from_json(
 |---|---|---|
 | `json_path` | `str` | Path to a JSON file |
 | `json_string` | `str` | Raw JSON string |
-| `data` | `dict` | Already-parsed dict matching `CatalogCreateDTO` |
+| `data` | `dict` | Already-parsed dict matching [`CatalogCreateDTO`](dto-reference.md#catalogcreatedto) |
 
-**Returns:** `Ok(CatalogCreatedResponseDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#catalogcreatedresponsedto">CatalogCreatedResponseDTO</a>)</code>.
 
 ```python
 result = await client.create_catalog_from_json(json_path="catalogs/spatial.json")
@@ -286,7 +286,7 @@ async def create_bulk_catalogs_from_json(
 ) -> Result[CatalogCreatedBulkResponseDTO, Exception]
 ```
 
-`POST /catalogs/bulk` — Creates multiple catalogs at once. The source must be a JSON array of `CatalogCreateDTO` payloads.
+`POST /catalogs/bulk` — Creates multiple catalogs at once. The source must be a JSON array of [`CatalogCreateDTO`](dto-reference.md#catalogcreatedto) payloads.
 
 | Parameter | Type | Description |
 |---|---|---|
@@ -294,7 +294,7 @@ async def create_bulk_catalogs_from_json(
 | `json_string` | `str` | Raw JSON string containing a list |
 | `data` | `List[dict]` | Already-parsed list of dicts |
 
-**Returns:** `Ok(CatalogCreatedBulkResponseDTO)` — contains `catalog_ids: List[str]`.
+**Returns:** <code>Ok(<a href="../dto-reference/#catalogcreatedbulkresponsedto">CatalogCreatedBulkResponseDTO</a>)</code> — contains `catalog_ids: List[str]`.
 
 ---
 
@@ -312,16 +312,16 @@ async def update_catalog(
 | Parameter | Type | Description |
 |---|---|---|
 | `catalog_id` | `str` | Target catalog identifier |
-| `payload` | `CatalogUpdateDTO` | Fields to update |
+| `payload` | [`CatalogUpdateDTO`](dto-reference.md#catalogupdatedto) | Fields to update |
 
-**`CatalogUpdateDTO` fields** (all optional):
+**[`CatalogUpdateDTO`](dto-reference.md#catalogupdatedto) fields** (all optional):
 
 | Field | Type | Description |
 |---|---|---|
 | `name` | `str` | New human-readable name |
 | `description` | `str` | New description |
 
-**Returns:** `Ok(CatalogSummaryDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#catalogsummarydto">CatalogSummaryDTO</a>)</code>.
 
 ```python
 result = await client.update_catalog(
@@ -335,16 +335,16 @@ result = await client.update_catalog(
 ### `delete_catalog`
 
 ```python
-async def delete_catalog(catalog_id: str) -> Result[CatalogSummaryDTO, Exception]
+async def delete_catalog(catalog_id: str) -> Result[bool, Exception]
 ```
 
-`DELETE /catalogs/{catalog_id}` — Deletes a catalog and all its linked relationships.
+`DELETE /catalogs/{catalog_id}` — Deletes a catalog and all its linked relationships. The API responds with 204 No Content.
 
 | Parameter | Type | Description |
 |---|---|---|
 | `catalog_id` | `str` | Target catalog identifier |
 
-**Returns:** `Ok(CatalogSummaryDTO)` — the deleted catalog's summary.
+**Returns:** `Ok(True)`.
 
 ```python
 result = await client.delete_catalog("cat_abc")
@@ -355,15 +355,30 @@ result = await client.delete_catalog("cat_abc")
 ### `list_catalogs`
 
 ```python
-async def list_catalogs() -> Result[List[CatalogSummaryDTO], Exception]
+async def list_catalogs(
+    catalog_type: Optional[List[str]] = None,
+    q: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 50,
+) -> Result[PageDTO[CatalogSummaryDTO], Exception]
 ```
 
-`GET /catalogs` — Returns a lightweight summary list of all catalogs.
+`GET /catalogs` — Returns a paginated, lightweight list of catalogs, optionally filtered by type and name/value.
 
-**Returns:** `Ok(List[CatalogSummaryDTO])` — each item has `catalog_id`, `name`, `value`, `catalog_type`.
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `catalog_type` | `List[str] \| None` | `None` | Filter by one or more catalog types (`SPATIAL`, `TEMPORAL`, `INTEREST`, `OBSERVABLE`, `REFERENCE`) |
+| `q` | `str \| None` | `None` | Case-insensitive search on catalog name or value |
+| `skip` | `int` | `0` | Number of catalogs to skip |
+| `limit` | `int` | `50` | Maximum number of catalogs to return (1-500) |
+
+**Returns:** <code>Ok(<a href="../dto-reference/#pagedto">PageDTO</a>[<a href="../dto-reference/#catalogsummarydto">CatalogSummaryDTO</a>])</code> — `items`, `total`, `skip`, `limit`; each item has `catalog_id`, `name`, `value`, `catalog_type`.
 
 ```python
-catalogs = (await client.list_catalogs()).unwrap()
+page = (await client.list_catalogs(catalog_type=["SPATIAL"], limit=100)).unwrap()
+for catalog in page.items:
+    print(catalog.catalog_id, catalog.name)
+print(f"{len(page.items)} of {page.total}")
 ```
 
 ---
@@ -380,7 +395,27 @@ async def get_catalog(catalog_id: str) -> Result[CatalogResponseDTO, Exception]
 |---|---|---|
 | `catalog_id` | `str` | Unique identifier of the catalog |
 
-**Returns:** `Ok(CatalogResponseDTO)` — contains `catalog_id`, `name`, `value`, `catalog_type`, `description`, `items`.
+**Returns:** <code>Ok(<a href="../dto-reference/#catalogresponsedto">CatalogResponseDTO</a>)</code> — contains `catalog_id`, `name`, `value`, `catalog_type`, `description`, `items`.
+
+---
+
+### `list_catalog_items_for_catalog`
+
+```python
+async def list_catalog_items_for_catalog(catalog_id: str) -> Result[List[CatalogItemXResponseDTO], Exception]
+```
+
+`GET /catalogs/{catalog_id}/items` — Returns every item in a catalog as a flat list.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `catalog_id` | `str` | Unique identifier of the catalog |
+
+**Returns:** <code>Ok(List[<a href="../dto-reference/#catalogitemxresponsedto">CatalogItemXResponseDTO</a>])</code>.
+
+```python
+items = (await client.list_catalog_items_for_catalog("cat_abc")).unwrap()
+```
 
 ---
 
@@ -396,7 +431,7 @@ async def create_catalog_item(
 
 `POST /catalog-items` — Creates a standalone catalog item in an existing catalog.
 
-**`CatalogItemStandaloneCreateDTO` fields:**
+**[`CatalogItemStandaloneCreateDTO`](dto-reference.md#catalogitemstandalonecreatedto) fields:**
 
 | Field | Type | Required | Description |
 |---|---|---|---|
@@ -408,8 +443,10 @@ async def create_catalog_item(
 | `description` | `str` | No | Contextual description |
 | `temporal_value` | `str` | No | ISO 8601 datetime |
 | `parent_item_id` | `str` | No | ID of a parent item for hierarchy placement |
+| `catalog_type` | `str` | No | `INTEREST`, `TEMPORAL`, `SPATIAL`, `OBSERVABLE`, or `REFERENCE` |
+| `metadata` | `Dict[str, str]` | No | String key-value metadata |
 
-**Returns:** `Ok(CatalogItemXResponseDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#catalogitemxresponsedto">CatalogItemXResponseDTO</a>)</code>.
 
 ---
 
@@ -425,7 +462,7 @@ async def list_catalog_items(limit: int = 100) -> Result[List[CatalogItemXRespon
 |---|---|---|---|
 | `limit` | `int` | `100` | Maximum number of items to return |
 
-**Returns:** `Ok(List[CatalogItemXResponseDTO])`.
+**Returns:** <code>Ok(List[<a href="../dto-reference/#catalogitemxresponsedto">CatalogItemXResponseDTO</a>])</code>.
 
 ---
 
@@ -441,7 +478,7 @@ async def get_catalog_item(catalog_item_id: str) -> Result[CatalogItemXResponseD
 |---|---|---|
 | `catalog_item_id` | `str` | Unique identifier of the item |
 
-**Returns:** `Ok(CatalogItemXResponseDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#catalogitemxresponsedto">CatalogItemXResponseDTO</a>)</code>.
 
 ---
 
@@ -459,9 +496,9 @@ async def update_catalog_item(
 | Parameter | Type | Description |
 |---|---|---|
 | `catalog_item_id` | `str` | Unique identifier of the item |
-| `dto` | `CatalogItemUpdateDTO` or `dict` | Fields to update |
+| `dto` | [`CatalogItemUpdateDTO`](dto-reference.md#catalogitemupdatedto) or `dict` | Fields to update |
 
-**`CatalogItemUpdateDTO` fields** (all optional):
+**[`CatalogItemUpdateDTO`](dto-reference.md#catalogitemupdatedto) fields** (all optional):
 
 | Field | Type | Description |
 |---|---|---|
@@ -469,7 +506,7 @@ async def update_catalog_item(
 | `description` | `str` | New description |
 | `temporal_value` | `str` | New ISO 8601 datetime |
 
-**Returns:** `Ok(CatalogItemXResponseDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#catalogitemxresponsedto">CatalogItemXResponseDTO</a>)</code>.
 
 ---
 
@@ -485,7 +522,7 @@ async def delete_catalog_item(catalog_item_id: str) -> Result[CatalogItemDeleteR
 |---|---|---|
 | `catalog_item_id` | `str` | Unique identifier of the item |
 
-**Returns:** `Ok(CatalogItemDeleteResponseDTO)` — contains `deleted: bool`.
+**Returns:** <code>Ok(<a href="../dto-reference/#catalogitemdeleteresponsedto">CatalogItemDeleteResponseDTO</a>)</code> — contains `deleted: bool`.
 
 ---
 
@@ -497,7 +534,7 @@ async def list_catalog_item_aliases(catalog_item_id: str) -> Result[List[Catalog
 
 `GET /catalog-items/{id}/aliases` — Returns all aliases for an item.
 
-**Returns:** `Ok(List[CatalogItemAliasXResponseDTO])`.
+**Returns:** <code>Ok(List[<a href="../dto-reference/#catalogitemaliasxresponsedto">CatalogItemAliasXResponseDTO</a>])</code>.
 
 ---
 
@@ -515,9 +552,9 @@ async def add_catalog_item_alias(
 | Parameter | Type | Description |
 |---|---|---|
 | `catalog_item_id` | `str` | Unique identifier of the item |
-| `dto` | `CatalogItemAliasCreateDTO` or `dict` | Alias payload |
+| `dto` | [`CatalogItemAliasCreateDTO`](dto-reference.md#catalogitemaliascreatedto) or `dict` | Alias payload |
 
-**`CatalogItemAliasCreateDTO` fields:**
+**[`CatalogItemAliasCreateDTO`](dto-reference.md#catalogitemaliascreatedto) fields:**
 
 | Field | Type | Required | Description |
 |---|---|---|---|
@@ -525,7 +562,7 @@ async def add_catalog_item_alias(
 | `value_type` | `str` | Yes | `STRING`, `NUMBER`, `BOOLEAN`, or `DATETIME` |
 | `description` | `str` | No | Contextual description |
 
-**Returns:** `Ok(CatalogItemAliasXResponseDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#catalogitemaliasxresponsedto">CatalogItemAliasXResponseDTO</a>)</code>.
 
 ---
 
@@ -552,7 +589,7 @@ async def list_catalog_item_children(catalog_item_id: str) -> Result[List[Catalo
 
 `GET /catalog-items/{id}/children` — Returns direct child items in the hierarchy.
 
-**Returns:** `Ok(List[CatalogItemXResponseDTO])`.
+**Returns:** <code>Ok(List[<a href="../dto-reference/#catalogitemxresponsedto">CatalogItemXResponseDTO</a>])</code>.
 
 ---
 
@@ -570,9 +607,9 @@ async def link_catalog_item_child(
 | Parameter | Type | Description |
 |---|---|---|
 | `catalog_item_id` | `str` | Parent item ID |
-| `dto` | `CatalogItemChildLinkCreateDTO` | Must contain `child_item_id: str` |
+| `dto` | [`CatalogItemChildLinkCreateDTO`](dto-reference.md#catalogitemchildlinkcreatedto) | Must contain `child_item_id: str` |
 
-**Returns:** `Ok(CatalogItemChildLinkResponseDTO)` — contains `parent_item_id` and `child_item_id`.
+**Returns:** <code>Ok(<a href="../dto-reference/#catalogitemchildlinkresponsedto">CatalogItemChildLinkResponseDTO</a>)</code> — contains `parent_item_id` and `child_item_id`.
 
 ---
 
@@ -599,7 +636,7 @@ async def list_catalogs_for_item(catalog_item_id: str) -> Result[List[CatalogXDT
 
 `GET /catalog-items/{id}/catalogs` — Returns all catalogs that contain this item.
 
-**Returns:** `Ok(List[CatalogXDTO])`.
+**Returns:** <code>Ok(List[<a href="../dto-reference/#catalogxdto">CatalogXDTO</a>])</code>.
 
 ---
 
@@ -617,9 +654,9 @@ async def link_item_to_catalog(
 | Parameter | Type | Description |
 |---|---|---|
 | `catalog_item_id` | `str` | Item to link |
-| `dto` | `CatalogItemCatalogLinkCreateDTO` | Must contain `catalog_id: str` |
+| `dto` | [`CatalogItemCatalogLinkCreateDTO`](dto-reference.md#catalogitemcataloglinkcreatedto) | Must contain `catalog_id: str` |
 
-**Returns:** `Ok(CatalogItemCatalogLinkResponseDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#catalogitemcataloglinkresponsedto">CatalogItemCatalogLinkResponseDTO</a>)</code>.
 
 ---
 
@@ -646,7 +683,7 @@ async def list_products_for_item(catalog_item_id: str) -> Result[ItemProductsDTO
 
 `GET /catalog-items/{id}/products` — Returns the product IDs tagged with this item.
 
-**Returns:** `Ok(ItemProductsDTO)` — contains `catalog_item_id` and `product_ids: List[str]`.
+**Returns:** <code>Ok(<a href="../dto-reference/#itemproductsdto">ItemProductsDTO</a>)</code> — contains `catalog_item_id` and `product_ids: List[str]`.
 
 ---
 
@@ -662,15 +699,16 @@ async def create_observatory(
 
 `POST /observatories` — Creates an immediately-enabled observatory.
 
-**`ObservatoryCreateDTO` fields:**
+**[`ObservatoryCreateDTO`](dto-reference.md#observatorycreatedto) fields:**
 
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `title` | `str` | Yes | Display name |
 | `description` | `str` | No | Contextual description |
 | `image_url` | `str` | No | URL of a representative image |
+| `metadata` | `Dict[str, str]` | No | String key-value metadata |
 
-**Returns:** `Ok(ObservatoryXDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#observatoryxdto">ObservatoryXDTO</a>)</code> — includes `is_disabled` and `view_count`.
 
 ```python
 result = await client.create_observatory(DTO.ObservatoryCreateDTO(
@@ -695,7 +733,7 @@ async def setup_observatory(
 !!! info "Two-step provisioning"
     Use `setup_observatory` when you need to index catalogs and products before the observatory becomes visible to users. Use `create_observatory` for immediate, empty observatories.
 
-**`ObservatorySetupDTO` fields:**
+**[`ObservatorySetupDTO`](dto-reference.md#observatorysetupdto) fields:**
 
 | Field | Type | Required | Description |
 |---|---|---|---|
@@ -705,7 +743,7 @@ async def setup_observatory(
 | `image_url` | `str` | No | URL of a representative image |
 | `metadata` | `Dict[str, str]` | No | Arbitrary key-value metadata |
 
-**Returns:** `Ok(ObservatorySetupResponseDTO)` — contains `observatory_id` and `task_id`.
+**Returns:** <code>Ok(<a href="../dto-reference/#observatorysetupresponsedto">ObservatorySetupResponseDTO</a>)</code> — contains `observatory_id` and `task_id`.
 
 ```python
 result = await client.setup_observatory(DTO.ObservatorySetupDTO(
@@ -734,7 +772,7 @@ async def list_observatories(
 | `page_index` | `int` | `0` | Page offset (0-based) |
 | `limit` | `int` | `10` | Page size |
 
-**Returns:** `Ok(List[ObservatoryXDTO])`.
+**Returns:** <code>Ok(List[<a href="../dto-reference/#observatoryxdto">ObservatoryXDTO</a>])</code>.
 
 ---
 
@@ -746,7 +784,7 @@ async def get_observatory(observatory_id: str) -> Result[ObservatoryDetailDTO, E
 
 `GET /observatories/{id}` — Returns a single observatory enriched with linked services, data sources, and rating stats.
 
-**Returns:** `Ok(ObservatoryDetailDTO)` — extends `ObservatoryXDTO` with `services`, `data_sources`, `avg_rating`, and `review_count`.
+**Returns:** <code>Ok(<a href="../dto-reference/#observatorydetaildto">ObservatoryDetailDTO</a>)</code> — extends [`ObservatoryXDTO`](dto-reference.md#observatoryxdto) with `services`, `data_sources`, `avg_rating`, and `review_count`.
 
 ```python
 obs = (await client.get_observatory("obs_abc")).unwrap()
@@ -769,17 +807,17 @@ async def get_observatories_stats(
 |---|---|---|
 | `obs_ids` | `List[str]` | Observatory identifiers to query |
 
-**Returns:** `Ok(List[ObservatoryStatsDTO])`.
+**Returns:** <code>Ok(List[<a href="../dto-reference/#observatorystatsdto">ObservatoryStatsDTO</a>])</code>.
 
-**`ObservatoryStatsDTO` fields:**
+**[`ObservatoryStatsDTO`](dto-reference.md#observatorystatsdto) fields:**
 
 | Field | Type | Description |
 |---|---|---|
 | `observatory_id` | `str` | Observatory identifier |
 | `avg_rating` | `float` | Average user rating (0.0–5.0) |
 | `review_count` | `int` | Total number of reviews |
-| `services` | `List[ServiceSnapshotDTO]` | Linked services (id, name, provider) |
-| `data_sources` | `List[DataSourceSnapshotDTO]` | Linked data sources (id, name) |
+| `services` | <code>List[<a href="../dto-reference/#servicesnapshotdto">ServiceSnapshotDTO</a>]</code> | Linked services (id, name, provider) |
+| `data_sources` | <code>List[<a href="../dto-reference/#datasourcesnapshotdto">DataSourceSnapshotDTO</a>]</code> | Linked data sources (id, name) |
 
 ```python
 stats = (await client.get_observatories_stats(["obs_1", "obs_2"])).unwrap()
@@ -800,15 +838,16 @@ async def update_observatory(
 
 `PUT /observatories/{id}` — Updates mutable fields on an observatory.
 
-**`ObservatoryUpdateDTO` fields** (all optional):
+**[`ObservatoryUpdateDTO`](dto-reference.md#observatoryupdatedto) fields** (all optional):
 
 | Field | Type | Description |
 |---|---|---|
 | `title` | `str` | New display name |
 | `description` | `str` | New description |
 | `image_url` | `str` | New image URL |
+| `metadata` | `Dict[str, str]` | New string key-value metadata |
 
-**Returns:** `Ok(ObservatoryXDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#observatoryxdto">ObservatoryXDTO</a>)</code>.
 
 ---
 
@@ -820,7 +859,7 @@ async def delete_observatory(observatory_id: str) -> Result[ObservatoryDeleteRes
 
 `DELETE /observatories/{id}` — Deletes an observatory and its linked relationships.
 
-**Returns:** `Ok(ObservatoryDeleteResponseDTO)` — contains `deleted: bool`.
+**Returns:** <code>Ok(<a href="../dto-reference/#observatorydeleteresponsedto">ObservatoryDeleteResponseDTO</a>)</code> — contains `deleted: bool`.
 
 ---
 
@@ -838,9 +877,9 @@ async def link_catalog_to_observatory(
 | Parameter | Type | Description |
 |---|---|---|
 | `observatory_id` | `str` | Target observatory |
-| `dto` | `LinkCatalogDTO` | Contains `catalog_id: str` and optional `level: int` |
+| `dto` | [`LinkCatalogDTO`](dto-reference.md#linkcatalogdto) | Contains `catalog_id: str` and optional `level: int` |
 
-**Returns:** `Ok(ObservatoryCatalogLinkResponseDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#observatorycataloglinkresponsedto">ObservatoryCatalogLinkResponseDTO</a>)</code>.
 
 ---
 
@@ -852,7 +891,7 @@ async def list_observatory_catalogs(observatory_id: str) -> Result[List[CatalogX
 
 `GET /observatories/{id}/catalogs` — Lists all catalogs linked to an observatory.
 
-**Returns:** `Ok(List[CatalogXDTO])`.
+**Returns:** <code>Ok(List[<a href="../dto-reference/#catalogxdto">CatalogXDTO</a>])</code>.
 
 ---
 
@@ -885,9 +924,9 @@ async def bulk_assign_catalogs(
 | Parameter | Type | Description |
 |---|---|---|
 | `observatory_id` | `str` | Target observatory |
-| `dto` | `BulkCatalogsDTO` | Contains `catalogs: List[CatalogCreateDTO]` |
+| `dto` | [`BulkCatalogsDTO`](dto-reference.md#bulkcatalogsdto) | Contains <code>catalogs: List[<a href="../dto-reference/#catalogcreatedto">CatalogCreateDTO</a>]</code> |
 
-**Returns:** `Ok(BulkCatalogsResponseDTO)` — contains `observatory_id` and `catalog_ids: List[str]`.
+**Returns:** <code>Ok(<a href="../dto-reference/#bulkcatalogsresponsedto">BulkCatalogsResponseDTO</a>)</code> — contains `observatory_id` and `catalog_ids: List[str]`.
 
 ---
 
@@ -899,7 +938,7 @@ async def list_observatory_products(observatory_id: str) -> Result[List[ProductS
 
 `GET /observatories/{id}/products` — Lists all products linked to an observatory.
 
-**Returns:** `Ok(List[ProductSimpleDTO])`.
+**Returns:** <code>Ok(List[<a href="../dto-reference/#productsimpledto">ProductSimpleDTO</a>])</code>.
 
 ---
 
@@ -917,9 +956,9 @@ async def link_product_to_observatory(
 | Parameter | Type | Description |
 |---|---|---|
 | `observatory_id` | `str` | Target observatory |
-| `dto` | `LinkProductDTO` | Contains `product_id: str` |
+| `dto` | [`LinkProductDTO`](dto-reference.md#linkproductdto) | Contains `product_id: str` |
 
-**Returns:** `Ok(ObservatoryProductLinkResponseDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#observatoryproductlinkresponsedto">ObservatoryProductLinkResponseDTO</a>)</code>.
 
 ---
 
@@ -952,9 +991,9 @@ async def bulk_assign_products(
 | Parameter | Type | Description |
 |---|---|---|
 | `observatory_id` | `str` | Target observatory |
-| `dto` | `BulkProductsDTO` | Contains `products: List[BulkProductItemDTO]` |
+| `dto` | [`BulkProductsDTO`](dto-reference.md#bulkproductsdto) | Contains <code>products: List[<a href="../dto-reference/#bulkproductitemdto">BulkProductItemDTO</a>]</code> |
 
-**`BulkProductItemDTO` fields:**
+**[`BulkProductItemDTO`](dto-reference.md#bulkproductitemdto) fields:**
 
 | Field | Type | Required | Description |
 |---|---|---|---|
@@ -963,7 +1002,7 @@ async def bulk_assign_products(
 | `description` | `str` | No | Contextual description |
 | `catalog_item_ids` | `List[str]` | No | Tags to apply |
 
-**Returns:** `Ok(BulkProductsResponseDTO)` — contains `observatory_id` and `products: List[BulkProductCreatedDTO]`.
+**Returns:** <code>Ok(<a href="../dto-reference/#bulkproductsresponsedto">BulkProductsResponseDTO</a>)</code> — contains `observatory_id` and <code>products: List[<a href="../dto-reference/#bulkproductcreateddto">BulkProductCreatedDTO</a>]</code>.
 
 ---
 
@@ -997,7 +1036,7 @@ async def list_observatory_services(
 
 `GET /observatories/{id}/services` — Lists all services linked to an observatory.
 
-**`ServiceSimpleDTO` fields:**
+**[`ServiceSimpleDTO`](dto-reference.md#servicesimpledto) fields:**
 
 | Field | Type | Description |
 |---|---|---|
@@ -1007,7 +1046,109 @@ async def list_observatory_services(
 | `provider` | `str` | Provider name (optional) |
 | `public` | `bool` | Whether the service is publicly visible |
 
-**Returns:** `Ok(List[ServiceSimpleDTO])`.
+**Returns:** <code>Ok(List[<a href="../dto-reference/#servicesimpledto">ServiceSimpleDTO</a>])</code>.
+
+---
+
+### `set_observatory_status`
+
+```python
+async def set_observatory_status(
+    observatory_id: str,
+    dto: Union[ObservatoryStatusUpdateDTO, Dict],
+) -> Result[ObservatoryXDTO, Exception]
+```
+
+`PATCH /observatories/{id}/status` — Enables or disables an observatory. Disabled observatories are hidden from regular users.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `is_disabled` | `bool` | Yes | `True` to disable, `False` to enable |
+
+**Returns:** <code>Ok(<a href="../dto-reference/#observatoryxdto">ObservatoryXDTO</a>)</code>.
+
+```python
+await client.set_observatory_status("obs_abc", DTO.ObservatoryStatusUpdateDTO(is_disabled=True))
+```
+
+---
+
+### `increment_observatory_view`
+
+```python
+async def increment_observatory_view(observatory_id: str) -> Result[ObservatoryViewResponseDTO, Exception]
+```
+
+`POST /observatories/{id}/view` — Increments the observatory's view counter.
+
+**Returns:** <code>Ok(<a href="../dto-reference/#observatoryviewresponsedto">ObservatoryViewResponseDTO</a>)</code> — contains `observatory_id` and the new `view_count`.
+
+---
+
+### `list_observatory_reviews`
+
+```python
+async def list_observatory_reviews(observatory_id: str) -> Result[List[ReviewDTO], Exception]
+```
+
+`GET /observatories/{id}/reviews` — Lists all reviews of an observatory.
+
+**Returns:** <code>Ok(List[<a href="../dto-reference/#reviewdto">ReviewDTO</a>])</code>.
+
+---
+
+### `create_observatory_review`
+
+```python
+async def create_observatory_review(
+    observatory_id: str,
+    dto: Union[CreateReviewDTO, Dict],
+) -> Result[ReviewDTO, Exception]
+```
+
+`POST /observatories/{id}/reviews` — Adds a review to an observatory.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `content` | `str` | Yes | Review text |
+| `rating` | `int` | Yes | Rating from 1 to 5 |
+
+**Returns:** <code>Ok(<a href="../dto-reference/#reviewdto">ReviewDTO</a>)</code>.
+
+```python
+review = (await client.create_observatory_review(
+    "obs_abc",
+    DTO.CreateReviewDTO(content="Clear and up to date.", rating=5),
+)).unwrap()
+```
+
+---
+
+### `update_observatory_review`
+
+```python
+async def update_observatory_review(
+    observatory_id: str,
+    review_id: str,
+    dto: Union[UpdateReviewDTO, Dict],
+) -> Result[ReviewDTO, Exception]
+```
+
+`PUT /observatories/{id}/reviews/{review_id}` — Updates a review. Both `content` and `rating` are optional.
+
+**Returns:** <code>Ok(<a href="../dto-reference/#reviewdto">ReviewDTO</a>)</code>.
+
+---
+
+### `delete_observatory_review`
+
+```python
+async def delete_observatory_review(observatory_id: str, review_id: str) -> Result[bool, Exception]
+```
+
+`DELETE /observatories/{id}/reviews/{review_id}` — Deletes a review (204 No Content).
+
+**Returns:** `Ok(True)`.
 
 ---
 
@@ -1056,7 +1197,7 @@ async def list_observatory_datasources(
 
 `GET /observatories/{id}/datasources` — Lists all data sources linked to an observatory.
 
-**Returns:** `Ok(List[DataSourceDTO])`.
+**Returns:** <code>Ok(List[<a href="../dto-reference/#datasourcedto">DataSourceDTO</a>])</code>.
 
 ---
 
@@ -1087,7 +1228,7 @@ async def create_product(
 
 `POST /products` — Creates a product linked to an observatory.
 
-**`ProductCreateDTO` fields:**
+**[`ProductCreateDTO`](dto-reference.md#productcreatedto) fields:**
 
 | Field | Type | Required | Description |
 |---|---|---|---|
@@ -1096,8 +1237,9 @@ async def create_product(
 | `product_id` | `str` | No | Pre-defined ID (random UUID generated if omitted) |
 | `description` | `str` | No | Contextual description |
 | `catalog_item_ids` | `List[str]` | No | Initial tags |
+| `metadata` | `Dict[str, str]` | No | String key-value metadata; searchable with [`filter_products`](#filter_products) |
 
-**Returns:** `Ok(ProductSimpleDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#productsimpledto">ProductSimpleDTO</a>)</code>.
 
 ---
 
@@ -1113,7 +1255,31 @@ async def list_products(limit: int = 100) -> Result[List[ProductSimpleDTO], Exce
 |---|---|---|---|
 | `limit` | `int` | `100` | Maximum number of products to return |
 
-**Returns:** `Ok(List[ProductSimpleDTO])`.
+**Returns:** <code>Ok(List[<a href="../dto-reference/#productsimpledto">ProductSimpleDTO</a>])</code>.
+
+---
+
+### `filter_products`
+
+```python
+async def filter_products(
+    metadata: Dict[str, str],
+    limit: int = 100,
+) -> Result[List[ProductSimpleDTO], Exception]
+```
+
+`GET /products/filter` — Returns products whose metadata matches every given key-value pair exactly (AND).
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `metadata` | `Dict[str, str]` | — | Metadata pairs to match. The key `limit` is reserved and returns `Err(ValueError)` |
+| `limit` | `int` | `100` | Maximum results (1-500) |
+
+**Returns:** <code>Ok(List[<a href="../dto-reference/#productsimpledto">ProductSimpleDTO</a>])</code>.
+
+```python
+csv_products = (await client.filter_products({"extension": "csv"})).unwrap()
+```
 
 ---
 
@@ -1125,7 +1291,7 @@ async def get_product(product_id: str) -> Result[ProductSimpleDTO, Exception]
 
 `GET /products/{id}` — Returns a single product.
 
-**Returns:** `Ok(ProductSimpleDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#productsimpledto">ProductSimpleDTO</a>)</code>.
 
 ---
 
@@ -1140,15 +1306,15 @@ async def update_product(
 
 `PUT /products/{id}` — Updates mutable fields on a product.
 
-**`ProductUpdateDTO` fields** (all optional):
+**[`ProductUpdateDTO`](dto-reference.md#productupdatedto) fields** (all optional):
 
 | Field | Type | Description |
 |---|---|---|
 | `name` | `str` | New display name |
 | `description` | `str` | New description |
-| `product_type` | `str` | New product type category |
+| `metadata` | `Dict[str, str]` | New string key-value metadata |
 
-**Returns:** `Ok(ProductSimpleDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#productsimpledto">ProductSimpleDTO</a>)</code>.
 
 ---
 
@@ -1160,7 +1326,7 @@ async def delete_product(product_id: str) -> Result[ProductDeleteResponseDTO, Ex
 
 `DELETE /products/{id}` — Deletes a product and its relationships.
 
-**Returns:** `Ok(ProductDeleteResponseDTO)` — contains `deleted: bool`.
+**Returns:** <code>Ok(<a href="../dto-reference/#productdeleteresponsedto">ProductDeleteResponseDTO</a>)</code> — contains `deleted: bool`.
 
 ---
 
@@ -1172,7 +1338,7 @@ async def get_product_tags(product_id: str) -> Result[ProductTagsResponseDTO, Ex
 
 `GET /products/{id}/tags` — Returns the catalog item IDs associated with a product.
 
-**Returns:** `Ok(ProductTagsResponseDTO)` — contains `product_id` and `catalog_item_ids: List[str]`.
+**Returns:** <code>Ok(<a href="../dto-reference/#producttagsresponsedto">ProductTagsResponseDTO</a>)</code> — contains `product_id` and `catalog_item_ids: List[str]`.
 
 ---
 
@@ -1190,9 +1356,9 @@ async def add_product_tags(
 | Parameter | Type | Description |
 |---|---|---|
 | `product_id` | `str` | Target product |
-| `dto` | `TagProductDTO` | Contains `catalog_item_ids: List[str]` |
+| `dto` | [`TagProductDTO`](dto-reference.md#tagproductdto) | Contains `catalog_item_ids: List[str]` |
 
-**Returns:** `Ok(ProductTagsResponseDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#producttagsresponsedto">ProductTagsResponseDTO</a>)</code>.
 
 ---
 
@@ -1211,15 +1377,70 @@ async def remove_product_tag(
 
 ---
 
+### `tag_product_from_catalog`
+
+```python
+async def tag_product_from_catalog(product_id: str, catalog_id: str) -> Result[BulkTagFromCatalogResponseDTO, Exception]
+```
+
+`POST /products/{id}/tags/catalog/{catalog_id}` — Tags a product with every item currently in a catalog, in one call.
+
+**Returns:** <code>Ok(<a href="../dto-reference/#bulktagfromcatalogresponsedto">BulkTagFromCatalogResponseDTO</a>)</code> — contains `product_id`, `catalog_id` and `linked_items` (number of items linked).
+
+---
+
+### `list_related_products`
+
+```python
+async def list_related_products(product_id: str) -> Result[List[ProductSimpleDTO], Exception]
+```
+
+`GET /products/{id}/related` — Returns the products related to this one. Relations are bidirectional: relating A to B makes each appear in the other's list.
+
+**Returns:** <code>Ok(List[<a href="../dto-reference/#productsimpledto">ProductSimpleDTO</a>])</code>.
+
+---
+
+### `add_related_product`
+
+```python
+async def add_related_product(
+    product_id: str,
+    dto: Union[RelateProductDTO, Dict],
+) -> Result[RelatedProductLinkResponseDTO, Exception]
+```
+
+`POST /products/{id}/related` — Relates another product to this one.
+
+**Returns:** <code>Ok(<a href="../dto-reference/#relatedproductlinkresponsedto">RelatedProductLinkResponseDTO</a>)</code> — contains `product_id` and `related_product_id`.
+
+```python
+await client.add_related_product("prod_a", DTO.RelateProductDTO(related_product_id="prod_b"))
+```
+
+---
+
+### `remove_related_product`
+
+```python
+async def remove_related_product(product_id: str, related_product_id: str) -> Result[bool, Exception]
+```
+
+`DELETE /products/{id}/related/{related_product_id}` — Removes a product relation (204 No Content).
+
+**Returns:** `Ok(True)`.
+
+---
+
 ### `get_product_tag_details`
 
 ```python
 async def get_product_tag_details(product_id: str) -> Result[List[CatalogItemXResponseDTO], Exception]
 ```
 
-`GET /products/{id}/tags/details` — Returns the full `CatalogItemXResponseDTO` for each tag instead of just IDs.
+`GET /products/{id}/tags/details` — Returns the full [`CatalogItemXResponseDTO`](dto-reference.md#catalogitemxresponsedto) for each tag instead of just IDs.
 
-**Returns:** `Ok(List[CatalogItemXResponseDTO])`.
+**Returns:** <code>Ok(List[<a href="../dto-reference/#catalogitemxresponsedto">CatalogItemXResponseDTO</a>])</code>.
 
 ---
 
@@ -1239,7 +1460,7 @@ async def upload_product(
 | `product_id` | `str` | Target product |
 | `file_path` | `str` or `bytes` | Path to a file on disk, or raw bytes |
 
-**Returns:** `Ok(ProductUploadResponseDTO)` — contains `job_id`, `product_id`, and `status`.
+**Returns:** <code>Ok(<a href="../dto-reference/#productuploadresponsedto">ProductUploadResponseDTO</a>)</code> — contains `job_id`, `product_id`, and `status`.
 
 **Error cases:**
 
@@ -1259,10 +1480,15 @@ print(f"Job {upload.job_id} queued with status {upload.status}")
 ### `download_product`
 
 ```python
-async def download_product(product_id: str) -> Result[bytes, Exception]
+async def download_product(product_id: str, job_id: Optional[str] = None) -> Result[bytes, Exception]
 ```
 
 `GET /products/{id}/download` — Downloads the product file as raw bytes.
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `product_id` | `str` | — | Product identifier |
+| `job_id` | `str` | `None` | Download the file from a specific upload job instead of the latest one |
 
 **Returns:** `Ok(bytes)`.
 
@@ -1312,7 +1538,7 @@ def register_upload(
 
 Enqueues a product upload job without executing it. This method is synchronous.
 
-If an `UploadRegistry` is active and the product already has a `succeeded` entry from a prior session, the job is **skipped** — it is never added to the queue and the `product_id` is recorded in `BulkUploadResult.skipped` instead. A `job_skipped_already_uploaded` log event is emitted immediately at INFO level.
+If an `UploadRegistry` is active and the product already has a `succeeded` entry from a prior session, the job is **skipped** — it is never added to the queue and the `product_id` is recorded in <code><a href="../dto-reference/#bulkuploadresult">BulkUploadResult</a>.skipped</code> instead. A `job_skipped_already_uploaded` log event is emitted immediately at INFO level.
 
 | Parameter | Type | Description |
 |---|---|---|
@@ -1351,7 +1577,7 @@ Processes all jobs registered via `register_upload()`. Drains and clears the que
 | `workers` | `int` | `1` | Number of concurrent upload coroutines |
 | `max_retries` | `int` | `1` | Maximum attempts per job (1 = no retry) |
 
-**Returns:** `Ok(BulkUploadResult)` — failed jobs are in `result.failed`, not wrapped in `Err`. Only returns `Err` if another `wait_uploads()` call is already running.
+**Returns:** <code>Ok(<a href="../dto-reference/#bulkuploadresult">BulkUploadResult</a>)</code> — failed jobs are in `result.failed`, not wrapped in `Err`. Only returns `Err` if another `wait_uploads()` call is already running.
 
 ```python
 client.register_upload("prod_1", "/data/report.csv")
@@ -1383,7 +1609,7 @@ Convenience wrapper that calls `register_upload()` for every entry and then call
 | `workers` | `int` | `1` | Concurrent upload coroutines |
 | `max_retries` | `int` | `1` | Attempts per job before permanent failure |
 
-**Returns:** `Ok(BulkUploadResult)` or `Err` if any payload type is invalid.
+**Returns:** <code>Ok(<a href="../dto-reference/#bulkuploadresult">BulkUploadResult</a>)</code> or `Err` if any payload type is invalid.
 
 ```python
 result = (await client.bulk_upload_products(
@@ -1519,17 +1745,18 @@ async def register_data_source(
 
 `POST /datasources` — Registers a new data source.
 
-**`DataSourceCreateDTO` fields:**
+**[`DataSourceCreateDTO`](dto-reference.md#datasourcecreatedto) fields:**
 
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `name` | `str` | Yes | Human-readable name |
+| `source_id` | `str` | No | Pre-defined ID (generated if omitted) |
 | `format` | `str` | No | `csv`, `json`, `postgres`, `mysql`, `mongodb` (default `csv`) |
 | `description` | `str` | No | Contextual description |
 | `bucket_id` | `str` | No | MictlanX bucket identifier |
 | `connection_uri` | `str` | No | Connection string for database sources |
 
-**Returns:** `Ok(DataSourceDTO)` — contains the system-generated `source_id`.
+**Returns:** <code>Ok(<a href="../dto-reference/#datasourcedto">DataSourceDTO</a>)</code> — contains the system-generated `source_id`.
 
 ---
 
@@ -1545,7 +1772,7 @@ async def register_data_source_from_json(
 
 `POST /datasources` — Convenience wrapper to load the payload from a file, JSON string, or dict.
 
-**Returns:** `Ok(DataSourceDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#datasourcedto">DataSourceDTO</a>)</code>.
 
 ---
 
@@ -1557,7 +1784,7 @@ async def list_data_sources() -> Result[List[DataSourceDTO], Exception]
 
 `GET /datasources` — Returns all registered data sources.
 
-**Returns:** `Ok(List[DataSourceDTO])`.
+**Returns:** <code>Ok(List[<a href="../dto-reference/#datasourcedto">DataSourceDTO</a>])</code>.
 
 ---
 
@@ -1569,7 +1796,7 @@ async def get_data_source(source_id: str) -> Result[DataSourceDTO, Exception]
 
 `GET /datasources/{id}` — Returns a single data source.
 
-**Returns:** `Ok(DataSourceDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#datasourcedto">DataSourceDTO</a>)</code>.
 
 ---
 
@@ -1587,9 +1814,9 @@ async def update_data_source(
 | Parameter | Type | Description |
 |---|---|---|
 | `source_id` | `str` | Target data source identifier |
-| `dto` | `DataSourceUpdateDTO` or `dict` | Fields to update |
+| `dto` | [`DataSourceUpdateDTO`](dto-reference.md#datasourceupdatedto) or `dict` | Fields to update |
 
-**`DataSourceUpdateDTO` fields** (all optional):
+**[`DataSourceUpdateDTO`](dto-reference.md#datasourceupdatedto) fields** (all optional):
 
 | Field | Type | Description |
 |---|---|---|
@@ -1598,7 +1825,7 @@ async def update_data_source(
 | `connection_uri` | `str` | New database connection string |
 | `bucket_id` | `str` | New MictlanX bucket identifier |
 
-**Returns:** `Ok(DataSourceDTO)` — the updated data source.
+**Returns:** <code>Ok(<a href="../dto-reference/#datasourcedto">DataSourceDTO</a>)</code> — the updated data source.
 
 ```python
 result = await client.update_data_source(
@@ -1617,7 +1844,7 @@ async def delete_data_source(source_id: str) -> Result[DataSourceDeleteResponseD
 
 `DELETE /datasources/{id}` — Deletes a data source and all its records.
 
-**Returns:** `Ok(DataSourceDeleteResponseDTO)` — contains `deleted: bool` and `records_removed: int`.
+**Returns:** <code>Ok(<a href="../dto-reference/#datasourcedeleteresponsedto">DataSourceDeleteResponseDTO</a>)</code> — contains `deleted: bool` and `records_removed: int`.
 
 ---
 
@@ -1635,9 +1862,9 @@ async def ingest_records(
 | Parameter | Type | Description |
 |---|---|---|
 | `source_id` | `str` | Target data source |
-| `records` | `List[DataRecordCreateDTO]` or `List[dict]` | Records to ingest |
+| `records` | <code>List[<a href="../dto-reference/#datarecordcreatedto">DataRecordCreateDTO</a>]</code> or `List[dict]` | Records to ingest |
 
-**`DataRecordCreateDTO` fields:**
+**[`DataRecordCreateDTO`](dto-reference.md#datarecordcreatedto) fields:**
 
 | Field | Type | Required | Description |
 |---|---|---|---|
@@ -1648,7 +1875,7 @@ async def ingest_records(
 | `numerical_interest_ids` | `Dict[str, float]` | No | Catalog item IDs mapped to numeric values |
 | `raw_payload` | `Dict[str, Any]` | No | Arbitrary additional data |
 
-**Returns:** `Ok(IngestResponseDTO)` — contains `inserted: int`.
+**Returns:** <code>Ok(<a href="../dto-reference/#ingestresponsedto">IngestResponseDTO</a>)</code> — contains `inserted: int`.
 
 ---
 
@@ -1665,7 +1892,7 @@ async def ingest_records_from_json(
 
 `POST /datasources/{id}/records` — Loads records from a file, JSON string, or list of dicts and ingests them.
 
-**Returns:** `Ok(IngestResponseDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#ingestresponsedto">IngestResponseDTO</a>)</code>.
 
 ---
 
@@ -1683,9 +1910,9 @@ async def query_records(
 | Parameter | Type | Description |
 |---|---|---|
 | `source_id` | `str` | Target data source |
-| `dto` | `DataSourceQueryDTO` | Query payload |
+| `dto` | [`DataSourceQueryDTO`](dto-reference.md#datasourcequerydto) | Query payload |
 
-**`DataSourceQueryDTO` fields:**
+**[`DataSourceQueryDTO`](dto-reference.md#datasourcequerydto) fields:**
 
 | Field | Type | Default | Description |
 |---|---|---|---|
@@ -1720,7 +1947,7 @@ async def search(dto: SearchQueryDTO) -> Result[Any, Exception]
 
 `POST /search` — Runs a JUB DSL query and returns hydrated product results.
 
-**`SearchQueryDTO` fields:**
+**[`SearchQueryDTO`](dto-reference.md#searchquerydto) fields:**
 
 | Field | Type | Default | Description |
 |---|---|---|---|
@@ -1728,6 +1955,8 @@ async def search(dto: SearchQueryDTO) -> Result[Any, Exception]
 | `observatory_id` | `str` | `None` | Scope the search to a specific observatory |
 | `limit` | `int` | `10` | Maximum results |
 | `skip` | `int` | `0` | Pagination offset |
+| `strict` | `bool` | `True` | Reject queries that reference unknown catalog values instead of ignoring them |
+| `no_cache` | `bool` | `False` | Bypass the server-side result cache |
 
 **Returns:** `Ok(list of product dicts)`.
 
@@ -1761,13 +1990,15 @@ async def generate_plot(dto: PlotQueryDTO) -> Result[Any, Exception]
 
 `POST /search/plot` — Runs a JUB DSL aggregation query and returns an ECharts-compatible JSON object.
 
-**`PlotQueryDTO` fields:**
+**[`PlotQueryDTO`](dto-reference.md#plotquerydto) fields:**
 
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `query` | `str` | — | JUB DSL aggregation query (use `VO` and `BY`) |
 | `observatory_id` | `str` | `None` | Optional observatory scope |
 | `chart_type` | `str` | `"bar"` | ECharts chart type (`bar`, `line`, `pie`, etc.) |
+| `source_id` | `str` | `None` | Optional data source to aggregate over |
+| `strict` | `bool` | `True` | Reject queries that reference unknown catalog values instead of ignoring them |
 
 **Returns:** `Ok(echarts_config_dict)`.
 
@@ -1800,7 +2031,7 @@ async def search_services(dto: ServiceQueryDTO) -> Result[List[ServiceDTO], Exce
 
 `POST /search/services` — Searches services using the JUB `SVC()` DSL operator.
 
-**`ServiceQueryDTO` fields:**
+**[`ServiceQueryDTO`](dto-reference.md#servicequerydto) fields:**
 
 | Field | Type | Default | Description |
 |---|---|---|---|
@@ -1817,7 +2048,40 @@ async def search_services(dto: ServiceQueryDTO) -> Result[List[ServiceDTO], Exce
 | `jub.v1.SVC(public=true)` | Public services only |
 | `jub.v1.SVC(owner=usr_abc)` | Services owned by user |
 
-**Returns:** `Ok(List[ServiceDTO])`.
+**Returns:** <code>Ok(List[<a href="../dto-reference/#servicedto">ServiceDTO</a>])</code>.
+
+---
+
+### `get_observatory_search_suggestions`
+
+```python
+async def get_observatory_search_suggestions(limit: int = 5) -> Result[ObservatorySearchSuggestionsResponseDTO, Exception]
+```
+
+`GET /search/observatories/suggestions` — Returns suggested observatory queries with their hit counts.
+
+**Returns:** <code>Ok(<a href="../dto-reference/#observatorysearchsuggestionsresponsedto">ObservatorySearchSuggestionsResponseDTO</a>)</code> — `suggestions` is a list of `{query, hit_count}`.
+
+---
+
+### `get_product_search_suggestions`
+
+```python
+async def get_product_search_suggestions(
+    observatory_id: Optional[str] = None,
+    limit: int = 5,
+) -> Result[SearchSuggestionsResponseDTO, Exception]
+```
+
+`GET /search/products/suggestions` — Returns suggested product queries with their hit counts, optionally scoped to an observatory.
+
+**Returns:** <code>Ok(<a href="../dto-reference/#searchsuggestionsresponsedto">SearchSuggestionsResponseDTO</a>)</code>.
+
+```python
+r = (await client.get_product_search_suggestions("obs_abc")).unwrap()
+for s in r.suggestions:
+    print(s.query, s.hit_count)
+```
 
 ---
 
@@ -1831,14 +2095,14 @@ async def get_task_stats() -> Result[TasksStatsDTO, Exception]
 
 `GET /tasks/stats` — Returns background task counts grouped by status.
 
-**Returns:** `Ok(TasksStatsDTO)` — contains `pending`, `running`, `success`, `failed` counts.
+**Returns:** <code>Ok(<a href="../dto-reference/#tasksstatsdto">TasksStatsDTO</a>)</code> — contains `pending`, `running`, `success`, `failed` counts.
 
 ---
 
 ### `list_my_tasks`
 
 ```python
-async def list_my_tasks(limit: int = 50) -> Result[List[TaskXDTO], Exception]
+async def list_my_tasks(limit: int = 50, skip: int = 0) -> Result[List[TaskXDTO], Exception]
 ```
 
 `GET /tasks` — Returns recent background tasks for the authenticated user.
@@ -1846,8 +2110,9 @@ async def list_my_tasks(limit: int = 50) -> Result[List[TaskXDTO], Exception]
 | Parameter | Type | Default | Description |
 |---|---|---|---|
 | `limit` | `int` | `50` | Maximum number of tasks to return |
+| `skip` | `int` | `0` | Number of tasks to skip |
 
-**Returns:** `Ok(List[TaskXDTO])`.
+**Returns:** <code>Ok(List[<a href="../dto-reference/#taskxdto">TaskXDTO</a>])</code>.
 
 ---
 
@@ -1859,7 +2124,7 @@ async def get_task(task_id: str) -> Result[TaskXDTO, Exception]
 
 `GET /tasks/{id}` — Returns details of a single background task.
 
-**Returns:** `Ok(TaskXDTO)` — contains `task_id`, `operation`, `current_status`, `progress_message`, timestamps.
+**Returns:** <code>Ok(<a href="../dto-reference/#taskxdto">TaskXDTO</a>)</code> — contains `task_id`, `operation`, `current_status`, `progress_message`, timestamps.
 
 ---
 
@@ -1877,16 +2142,16 @@ async def complete_task(
 | Parameter | Type | Description |
 |---|---|---|
 | `task_id` | `str` | Task to complete |
-| `dto` | `TaskCompleteDTO` | Completion payload |
+| `dto` | [`TaskCompleteDTO`](dto-reference.md#taskcompletedto) | Completion payload |
 
-**`TaskCompleteDTO` fields:**
+**[`TaskCompleteDTO`](dto-reference.md#taskcompletedto) fields:**
 
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `success` | `bool` | Yes | Whether the task completed successfully |
 | `message` | `str` | No | Status or error message from the worker |
 
-**Returns:** `Ok(TaskCompleteResponseDTO)` — contains `task_id`, `status`, `observatory_id`, `observatory_enabled`.
+**Returns:** <code>Ok(<a href="../dto-reference/#taskcompleteresponsedto">TaskCompleteResponseDTO</a>)</code> — contains `task_id`, `status`, `observatory_id`, `observatory_enabled`.
 
 ```python
 result = await client.complete_task(task_id, DTO.TaskCompleteDTO(
@@ -1957,7 +2222,7 @@ async def list_notifications(
 | `unread_only` | `bool` | `False` | When `True`, returns only unread notifications |
 | `limit` | `int` | `50` | Maximum notifications to return |
 
-**Returns:** `Ok(List[NotificationDTO])`.
+**Returns:** <code>Ok(List[<a href="../dto-reference/#notificationdto">NotificationDTO</a>])</code>.
 
 ---
 
@@ -1981,7 +2246,7 @@ async def mark_all_notifications_read() -> Result[NotificationReadAllResponseDTO
 
 `PUT /notifications/read-all` — Marks all unread notifications as read.
 
-**Returns:** `Ok(NotificationReadAllResponseDTO)` — contains `modified: int`.
+**Returns:** <code>Ok(<a href="../dto-reference/#notificationreadallresponsedto">NotificationReadAllResponseDTO</a>)</code> — contains `modified: int`.
 
 ---
 
@@ -1993,7 +2258,7 @@ async def clear_read_notifications() -> Result[NotificationClearReadResponseDTO,
 
 `DELETE /notifications/clear-read` — Deletes all previously read notifications.
 
-**Returns:** `Ok(NotificationClearReadResponseDTO)` — contains `deleted: int`.
+**Returns:** <code>Ok(<a href="../dto-reference/#notificationclearreadresponsedto">NotificationClearReadResponseDTO</a>)</code> — contains `deleted: int`.
 
 ---
 
@@ -2009,7 +2274,7 @@ async def create_building_block(
 
 `POST /building-blocks` — Creates a containerised unit of work.
 
-**`BuildingBlockCreateDTO` fields:**
+**[`BuildingBlockCreateDTO`](dto-reference.md#buildingblockcreatedto) fields:**
 
 | Field | Type | Required | Description |
 |---|---|---|---|
@@ -2018,7 +2283,7 @@ async def create_building_block(
 | `image` | `str` | Yes | Docker image reference (e.g. `python:3.11-slim`) |
 | `description` | `str` | No | Contextual description |
 
-**Returns:** `Ok(BuildingBlockDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#buildingblockdto">BuildingBlockDTO</a>)</code>.
 
 ---
 
@@ -2030,7 +2295,7 @@ async def list_building_blocks(skip: int = 0, limit: int = 100) -> Result[List[B
 
 `GET /building-blocks` — Returns a paginated list of building blocks.
 
-**Returns:** `Ok(List[BuildingBlockDTO])`.
+**Returns:** <code>Ok(List[<a href="../dto-reference/#buildingblockdto">BuildingBlockDTO</a>])</code>.
 
 ---
 
@@ -2042,7 +2307,7 @@ async def get_building_block(building_block_id: str) -> Result[BuildingBlockDTO,
 
 `GET /building-blocks/{id}` — Returns a single building block.
 
-**Returns:** `Ok(BuildingBlockDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#buildingblockdto">BuildingBlockDTO</a>)</code>.
 
 ---
 
@@ -2057,7 +2322,7 @@ async def update_building_block(
 
 `PATCH /building-blocks/{id}` — Updates mutable fields on a building block.
 
-**`BuildingBlockUpdateDTO` fields** (all optional):
+**[`BuildingBlockUpdateDTO`](dto-reference.md#buildingblockupdatedto) fields** (all optional):
 
 | Field | Type | Description |
 |---|---|---|
@@ -2066,7 +2331,7 @@ async def update_building_block(
 | `image` | `str` | New Docker image |
 | `description` | `str` | New description |
 
-**Returns:** `Ok(BuildingBlockDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#buildingblockdto">BuildingBlockDTO</a>)</code>.
 
 ---
 
@@ -2094,7 +2359,7 @@ async def create_pattern(
 
 `POST /patterns` — Creates an execution pattern for a building block.
 
-**`PatternCreateDTO` fields:**
+**[`PatternCreateDTO`](dto-reference.md#patterncreatedto) fields:**
 
 | Field | Type | Required | Description |
 |---|---|---|---|
@@ -2106,7 +2371,7 @@ async def create_pattern(
 | `loadbalancer` | `str` | No | Load-balancing strategy (default `round-robin`) |
 | `building_block_id` | `str` | No | ID of an existing building block to associate |
 
-**Returns:** `Ok(PatternDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#patterndto">PatternDTO</a>)</code>.
 
 ---
 
@@ -2118,7 +2383,7 @@ async def list_patterns(skip: int = 0, limit: int = 100) -> Result[List[PatternD
 
 `GET /patterns` — Returns a paginated list of patterns.
 
-**Returns:** `Ok(List[PatternDTO])`.
+**Returns:** <code>Ok(List[<a href="../dto-reference/#patterndto">PatternDTO</a>])</code>.
 
 ---
 
@@ -2130,7 +2395,7 @@ async def get_pattern(pattern_id: str) -> Result[PatternDTO, Exception]
 
 `GET /patterns/{id}` — Returns a single pattern.
 
-**Returns:** `Ok(PatternDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#patterndto">PatternDTO</a>)</code>.
 
 ---
 
@@ -2143,9 +2408,9 @@ async def update_pattern(
 ) -> Result[PatternDTO, Exception]
 ```
 
-`PATCH /patterns/{id}` — Updates mutable fields on a pattern. All `PatternUpdateDTO` fields are optional.
+`PATCH /patterns/{id}` — Updates mutable fields on a pattern. All [`PatternUpdateDTO`](dto-reference.md#patternupdatedto) fields are optional.
 
-**Returns:** `Ok(PatternDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#patterndto">PatternDTO</a>)</code>.
 
 ---
 
@@ -2173,7 +2438,7 @@ async def create_stage(
 
 `POST /stages` — Creates a processing step (source → transformation → sink).
 
-**`StageCreateDTO` fields:**
+**[`StageCreateDTO`](dto-reference.md#stagecreatedto) fields:**
 
 | Field | Type | Required | Description |
 |---|---|---|---|
@@ -2183,7 +2448,7 @@ async def create_stage(
 | `endpoint` | `str` | Yes | HTTP or messaging endpoint exposed by this stage |
 | `transformation_id` | `str` | No | ID of an existing Pattern to apply |
 
-**Returns:** `Ok(StageDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#stagedto">StageDTO</a>)</code>.
 
 ---
 
@@ -2195,7 +2460,7 @@ async def list_stages(skip: int = 0, limit: int = 100) -> Result[List[StageDTO],
 
 `GET /stages` — Returns a paginated list of stages.
 
-**Returns:** `Ok(List[StageDTO])`.
+**Returns:** <code>Ok(List[<a href="../dto-reference/#stagedto">StageDTO</a>])</code>.
 
 ---
 
@@ -2207,7 +2472,7 @@ async def get_stage(stage_id: str) -> Result[StageDTO, Exception]
 
 `GET /stages/{id}` — Returns a single stage.
 
-**Returns:** `Ok(StageDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#stagedto">StageDTO</a>)</code>.
 
 ---
 
@@ -2220,9 +2485,9 @@ async def update_stage(
 ) -> Result[StageDTO, Exception]
 ```
 
-`PATCH /stages/{id}` — Updates mutable fields on a stage. All `StageUpdateDTO` fields are optional.
+`PATCH /stages/{id}` — Updates mutable fields on a stage. All [`StageUpdateDTO`](dto-reference.md#stageupdatedto) fields are optional.
 
-**Returns:** `Ok(StageDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#stagedto">StageDTO</a>)</code>.
 
 ---
 
@@ -2250,14 +2515,14 @@ async def create_workflow(
 
 `POST /workflows` — Creates a workflow from an ordered list of stages.
 
-**`WorkflowCreateDTO` fields:**
+**[`WorkflowCreateDTO`](dto-reference.md#workflowcreatedto) fields:**
 
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `name` | `str` | Yes | Workflow name |
 | `stage_ids` | `List[str]` | No | Ordered list of stage IDs |
 
-**Returns:** `Ok(WorkflowDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#workflowdto">WorkflowDTO</a>)</code>.
 
 ---
 
@@ -2269,7 +2534,7 @@ async def list_workflows(skip: int = 0, limit: int = 100) -> Result[List[Workflo
 
 `GET /workflows` — Returns a paginated list of workflows.
 
-**Returns:** `Ok(List[WorkflowDTO])`.
+**Returns:** <code>Ok(List[<a href="../dto-reference/#workflowdto">WorkflowDTO</a>])</code>.
 
 ---
 
@@ -2281,7 +2546,7 @@ async def get_workflow(workflow_id: str) -> Result[WorkflowDTO, Exception]
 
 `GET /workflows/{id}` — Returns a single workflow.
 
-**Returns:** `Ok(WorkflowDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#workflowdto">WorkflowDTO</a>)</code>.
 
 ---
 
@@ -2294,9 +2559,9 @@ async def update_workflow(
 ) -> Result[WorkflowDTO, Exception]
 ```
 
-`PATCH /workflows/{id}` — Updates mutable fields on a workflow. All `WorkflowUpdateDTO` fields are optional.
+`PATCH /workflows/{id}` — Updates mutable fields on a workflow. All [`WorkflowUpdateDTO`](dto-reference.md#workflowupdatedto) fields are optional.
 
-**Returns:** `Ok(WorkflowDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#workflowdto">WorkflowDTO</a>)</code>.
 
 ---
 
@@ -2316,7 +2581,7 @@ async def delete_workflow(
 | `workflow_id` | `str` | — | Target workflow |
 | `cascade` | `bool` | `False` | Also delete linked stages when `True` |
 
-**Returns:** `Ok(WorkflowDeleteResponseDTO)` — contains `deleted: bool` and `cascade: Dict`.
+**Returns:** <code>Ok(<a href="../dto-reference/#workflowdeleteresponsedto">WorkflowDeleteResponseDTO</a>)</code> — contains `deleted: bool` and `cascade: Dict`.
 
 ---
 
@@ -2332,7 +2597,7 @@ async def create_service(
 
 `POST /services` — Creates a service with an optional workflow reference.
 
-**`ServiceCreateDTO` fields:**
+**[`ServiceCreateDTO`](dto-reference.md#servicecreatedto) fields:**
 
 | Field | Type | Required | Description |
 |---|---|---|---|
@@ -2341,9 +2606,9 @@ async def create_service(
 | `description` | `str` | No | Contextual description |
 | `public` | `bool` | No | Whether the service is publicly discoverable (default `False`) |
 | `workflow_id` | `str` | No | ID of an existing workflow to attach |
-| `provider` | `ServiceProviderEnum` | No | Provider classification |
+| `provider` | [`ServiceProviderEnum`](dto-reference.md#serviceproviderenum) | No | Provider classification |
 
-**Returns:** `Ok(ServiceDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#servicedto">ServiceDTO</a>)</code>.
 
 ---
 
@@ -2357,7 +2622,7 @@ async def index_service(
 
 `POST /services/index` — One-shot endpoint that creates the full **Service → Workflow → Stages → Patterns → Building Blocks** tree in a single request.
 
-**`ServiceIndexDTO` fields:**
+**[`ServiceIndexDTO`](dto-reference.md#serviceindexdto) fields:**
 
 | Field | Type | Required | Description |
 |---|---|---|---|
@@ -2365,9 +2630,9 @@ async def index_service(
 | `owner_id` | `str` | Yes | User ID of the service owner |
 | `description` | `str` | No | Contextual description |
 | `public` | `bool` | No | Publicly discoverable (default `False`) |
-| `workflow` | `WorkflowInlineDTO` | No | Inline workflow to create (mutually exclusive with `workflow_id`) |
+| `workflow` | [`WorkflowInlineDTO`](dto-reference.md#workflowinlinedto) | No | Inline workflow to create (mutually exclusive with `workflow_id`) |
 | `workflow_id` | `str` | No | Existing workflow to attach |
-| `provider` | `ServiceProviderEnum` | No | Provider classification |
+| `provider` | [`ServiceProviderEnum`](dto-reference.md#serviceproviderenum) | No | Provider classification |
 
 **Inline DTO hierarchy:**
 
@@ -2381,7 +2646,7 @@ ServiceIndexDTO
 
 At each level you can provide inline definitions or reference existing IDs.
 
-**Returns:** `Ok(ServiceIndexResponseDTO)` — contains `service_id`, `workflow_id`, `stage_ids`, `pattern_ids`, `building_block_ids`.
+**Returns:** <code>Ok(<a href="../dto-reference/#serviceindexresponsedto">ServiceIndexResponseDTO</a>)</code> — contains `service_id`, `workflow_id`, `stage_ids`, `pattern_ids`, `building_block_ids`.
 
 ---
 
@@ -2393,7 +2658,7 @@ async def list_services(skip: int = 0, limit: int = 100) -> Result[List[ServiceD
 
 `GET /services` — Returns a paginated list of services.
 
-**Returns:** `Ok(List[ServiceDTO])`.
+**Returns:** <code>Ok(List[<a href="../dto-reference/#servicedto">ServiceDTO</a>])</code>.
 
 ---
 
@@ -2405,7 +2670,7 @@ async def get_service(service_id: str) -> Result[ServiceDTO, Exception]
 
 `GET /services/{id}` — Returns a single service.
 
-**Returns:** `Ok(ServiceDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#servicedto">ServiceDTO</a>)</code>.
 
 ---
 
@@ -2418,9 +2683,9 @@ async def update_service(
 ) -> Result[ServiceDTO, Exception]
 ```
 
-`PATCH /services/{id}` — Updates mutable fields on a service. All `ServiceUpdateDTO` fields are optional.
+`PATCH /services/{id}` — Updates mutable fields on a service (`name`, `description`, `public`, `provider`, `workflow_id`). All [`ServiceUpdateDTO`](dto-reference.md#serviceupdatedto) fields are optional.
 
-**Returns:** `Ok(ServiceDTO)`.
+**Returns:** <code>Ok(<a href="../dto-reference/#servicedto">ServiceDTO</a>)</code>.
 
 ---
 
@@ -2432,7 +2697,7 @@ async def delete_service(service_id: str) -> Result[ServiceDeleteResponseDTO, Ex
 
 `DELETE /services/{id}` — Deletes a service and returns a cascade summary.
 
-**Returns:** `Ok(ServiceDeleteResponseDTO)` — contains `deleted: bool`, `service_id`, and `cascade: Dict`.
+**Returns:** <code>Ok(<a href="../dto-reference/#servicedeleteresponsedto">ServiceDeleteResponseDTO</a>)</code> — contains `deleted: bool`, `service_id`, and `cascade: Dict`.
 
 ---
 
@@ -2440,48 +2705,55 @@ async def delete_service(service_id: str) -> Result[ServiceDeleteResponseDTO, Ex
 
 | Model | Returned by |
 |---|---|
-| `AuthResponseDTO` | `signup()` |
-| `UserProfileDTO` | `get_current_user()` |
-| `UserPreferencesDTO` | `get_user_settings()`, `update_user_settings()` |
-| `CatalogCreatedResponseDTO` | `create_catalog()`, `create_catalog_from_json()` |
-| `CatalogCreatedBulkResponseDTO` | `create_bulk_catalogs_from_json()` |
-| `CatalogSummaryDTO` | `list_catalogs()` |
-| `CatalogResponseDTO` | `get_catalog()` |
-| `CatalogXDTO` | `list_observatory_catalogs()`, `list_catalogs_for_item()` |
-| `CatalogItemXResponseDTO` | `create_catalog_item()`, `get_catalog_item()`, `list_catalog_items()`, `update_catalog_item()`, `get_product_tag_details()` |
-| `CatalogItemDeleteResponseDTO` | `delete_catalog_item()` |
-| `CatalogItemAliasXResponseDTO` | `list_catalog_item_aliases()`, `add_catalog_item_alias()` |
-| `CatalogItemChildLinkResponseDTO` | `link_catalog_item_child()` |
-| `CatalogItemCatalogLinkResponseDTO` | `link_item_to_catalog()` |
-| `ItemProductsDTO` | `list_products_for_item()` |
-| `ObservatoryXDTO` | `create_observatory()`, `get_observatory()`, `list_observatories()`, `update_observatory()` |
-| `ObservatorySetupResponseDTO` | `setup_observatory()` |
-| `ObservatoryDeleteResponseDTO` | `delete_observatory()` |
-| `ObservatoryCatalogLinkResponseDTO` | `link_catalog_to_observatory()` |
-| `ObservatoryProductLinkResponseDTO` | `link_product_to_observatory()` |
-| `BulkCatalogsResponseDTO` | `bulk_assign_catalogs()` |
-| `BulkProductsResponseDTO` | `bulk_assign_products()` |
-| `ProductSimpleDTO` | `create_product()`, `get_product()`, `list_products()`, `update_product()`, `list_observatory_products()` |
-| `ProductDeleteResponseDTO` | `delete_product()` |
-| `ProductTagsResponseDTO` | `get_product_tags()`, `add_product_tags()` |
-| `ProductUploadResponseDTO` | `upload_product()` |
-| `DataSourceDTO` | `register_data_source()`, `get_data_source()`, `list_data_sources()` |
-| `DataSourceDeleteResponseDTO` | `delete_data_source()` |
-| `IngestResponseDTO` | `ingest_records()`, `ingest_records_from_json()` |
-| `TasksStatsDTO` | `get_task_stats()` |
-| `TaskXDTO` | `get_task()`, `list_my_tasks()` |
-| `TaskCompleteResponseDTO` | `complete_task()` |
-| `NotificationDTO` | `list_notifications()` |
-| `NotificationReadAllResponseDTO` | `mark_all_notifications_read()` |
-| `NotificationClearReadResponseDTO` | `clear_read_notifications()` |
-| `BuildingBlockDTO` | `create_building_block()`, `get_building_block()`, `list_building_blocks()`, `update_building_block()` |
-| `PatternDTO` | `create_pattern()`, `get_pattern()`, `list_patterns()`, `update_pattern()` |
-| `StageDTO` | `create_stage()`, `get_stage()`, `list_stages()`, `update_stage()` |
-| `WorkflowDTO` | `create_workflow()`, `get_workflow()`, `list_workflows()`, `update_workflow()` |
-| `WorkflowDeleteResponseDTO` | `delete_workflow()` |
-| `ServiceDTO` | `create_service()`, `get_service()`, `list_services()`, `update_service()`, `search_services()` |
-| `ServiceIndexResponseDTO` | `index_service()` |
-| `ServiceDeleteResponseDTO` | `delete_service()` |
+| [`AuthResponseDTO`](dto-reference.md#authresponsedto) | `signup()` |
+| [`UserProfileDTO`](dto-reference.md#userprofiledto) | `get_current_user()` |
+| [`UserPreferencesDTO`](dto-reference.md#userpreferencesdto) | `get_user_settings()`, `update_user_settings()` |
+| [`CatalogCreatedResponseDTO`](dto-reference.md#catalogcreatedresponsedto) | `create_catalog()`, `create_catalog_from_json()` |
+| [`CatalogCreatedBulkResponseDTO`](dto-reference.md#catalogcreatedbulkresponsedto) | `create_bulk_catalogs_from_json()` |
+| [`PageDTO`](dto-reference.md#pagedto)<code>[<a href="../dto-reference/#catalogsummarydto">CatalogSummaryDTO</a>]</code> | `list_catalogs()` |
+| [`CatalogSummaryDTO`](dto-reference.md#catalogsummarydto) | `update_catalog()` |
+| [`CatalogResponseDTO`](dto-reference.md#catalogresponsedto) | `get_catalog()` |
+| [`CatalogXDTO`](dto-reference.md#catalogxdto) | `list_observatory_catalogs()`, `list_catalogs_for_item()` |
+| [`CatalogItemXResponseDTO`](dto-reference.md#catalogitemxresponsedto) | `create_catalog_item()`, `get_catalog_item()`, `list_catalog_items()`, `update_catalog_item()`, `get_product_tag_details()`, `list_catalog_items_for_catalog()` |
+| [`CatalogItemDeleteResponseDTO`](dto-reference.md#catalogitemdeleteresponsedto) | `delete_catalog_item()` |
+| [`CatalogItemAliasXResponseDTO`](dto-reference.md#catalogitemaliasxresponsedto) | `list_catalog_item_aliases()`, `add_catalog_item_alias()` |
+| [`CatalogItemChildLinkResponseDTO`](dto-reference.md#catalogitemchildlinkresponsedto) | `link_catalog_item_child()` |
+| [`CatalogItemCatalogLinkResponseDTO`](dto-reference.md#catalogitemcataloglinkresponsedto) | `link_item_to_catalog()` |
+| [`ItemProductsDTO`](dto-reference.md#itemproductsdto) | `list_products_for_item()` |
+| [`ObservatoryXDTO`](dto-reference.md#observatoryxdto) | `create_observatory()`, `get_observatory()`, `list_observatories()`, `update_observatory()`, `set_observatory_status()` |
+| [`ObservatoryViewResponseDTO`](dto-reference.md#observatoryviewresponsedto) | `increment_observatory_view()` |
+| [`ReviewDTO`](dto-reference.md#reviewdto) | `list_observatory_reviews()`, `create_observatory_review()`, `update_observatory_review()` |
+| [`ObservatorySetupResponseDTO`](dto-reference.md#observatorysetupresponsedto) | `setup_observatory()` |
+| [`ObservatoryDeleteResponseDTO`](dto-reference.md#observatorydeleteresponsedto) | `delete_observatory()` |
+| [`ObservatoryCatalogLinkResponseDTO`](dto-reference.md#observatorycataloglinkresponsedto) | `link_catalog_to_observatory()` |
+| [`ObservatoryProductLinkResponseDTO`](dto-reference.md#observatoryproductlinkresponsedto) | `link_product_to_observatory()` |
+| [`BulkCatalogsResponseDTO`](dto-reference.md#bulkcatalogsresponsedto) | `bulk_assign_catalogs()` |
+| [`BulkProductsResponseDTO`](dto-reference.md#bulkproductsresponsedto) | `bulk_assign_products()` |
+| [`ProductSimpleDTO`](dto-reference.md#productsimpledto) | `create_product()`, `get_product()`, `list_products()`, `update_product()`, `list_observatory_products()`, `filter_products()`, `list_related_products()` |
+| [`ProductDeleteResponseDTO`](dto-reference.md#productdeleteresponsedto) | `delete_product()` |
+| [`ProductTagsResponseDTO`](dto-reference.md#producttagsresponsedto) | `get_product_tags()`, `add_product_tags()` |
+| [`ProductUploadResponseDTO`](dto-reference.md#productuploadresponsedto) | `upload_product()` |
+| [`BulkTagFromCatalogResponseDTO`](dto-reference.md#bulktagfromcatalogresponsedto) | `tag_product_from_catalog()` |
+| [`RelatedProductLinkResponseDTO`](dto-reference.md#relatedproductlinkresponsedto) | `add_related_product()` |
+| [`SearchSuggestionsResponseDTO`](dto-reference.md#searchsuggestionsresponsedto) | `get_product_search_suggestions()` |
+| [`ObservatorySearchSuggestionsResponseDTO`](dto-reference.md#observatorysearchsuggestionsresponsedto) | `get_observatory_search_suggestions()` |
+| [`DataSourceDTO`](dto-reference.md#datasourcedto) | `register_data_source()`, `get_data_source()`, `list_data_sources()` |
+| [`DataSourceDeleteResponseDTO`](dto-reference.md#datasourcedeleteresponsedto) | `delete_data_source()` |
+| [`IngestResponseDTO`](dto-reference.md#ingestresponsedto) | `ingest_records()`, `ingest_records_from_json()` |
+| [`TasksStatsDTO`](dto-reference.md#tasksstatsdto) | `get_task_stats()` |
+| [`TaskXDTO`](dto-reference.md#taskxdto) | `get_task()`, `list_my_tasks()` |
+| [`TaskCompleteResponseDTO`](dto-reference.md#taskcompleteresponsedto) | `complete_task()` |
+| [`NotificationDTO`](dto-reference.md#notificationdto) | `list_notifications()` |
+| [`NotificationReadAllResponseDTO`](dto-reference.md#notificationreadallresponsedto) | `mark_all_notifications_read()` |
+| [`NotificationClearReadResponseDTO`](dto-reference.md#notificationclearreadresponsedto) | `clear_read_notifications()` |
+| [`BuildingBlockDTO`](dto-reference.md#buildingblockdto) | `create_building_block()`, `get_building_block()`, `list_building_blocks()`, `update_building_block()` |
+| [`PatternDTO`](dto-reference.md#patterndto) | `create_pattern()`, `get_pattern()`, `list_patterns()`, `update_pattern()` |
+| [`StageDTO`](dto-reference.md#stagedto) | `create_stage()`, `get_stage()`, `list_stages()`, `update_stage()` |
+| [`WorkflowDTO`](dto-reference.md#workflowdto) | `create_workflow()`, `get_workflow()`, `list_workflows()`, `update_workflow()` |
+| [`WorkflowDeleteResponseDTO`](dto-reference.md#workflowdeleteresponsedto) | `delete_workflow()` |
+| [`ServiceDTO`](dto-reference.md#servicedto) | `create_service()`, `get_service()`, `list_services()`, `update_service()`, `search_services()` |
+| [`ServiceIndexResponseDTO`](dto-reference.md#serviceindexresponsedto) | `index_service()` |
+| [`ServiceDeleteResponseDTO`](dto-reference.md#servicedeleteresponsedto) | `delete_service()` |
 
 ---
 

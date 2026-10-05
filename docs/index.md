@@ -24,7 +24,8 @@ Every client method returns `Result[T, Exception]` from the [`option`](https://p
 ```python
 result = await client.list_catalogs()
 if result.is_ok:
-    catalogs = result.unwrap()   # List[CatalogSummaryDTO]
+    page = result.unwrap()       # PageDTO[CatalogSummaryDTO]
+    catalogs = page.items
 else:
     error = result.unwrap_err()  # Exception
 ```

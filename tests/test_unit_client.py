@@ -137,7 +137,7 @@ async def test_create_observatory(client):
     assert obs.title == "Climate Watch"
     client._post.assert_awaited_once_with(
         "http://localhost:5000/api/v2/observatories",
-        {"observatory_id":None,"title": "Climate Watch", "description": "Global sensors", "image_url": ""},
+        {"observatory_id":None,"title": "Climate Watch", "description": "Global sensors", "image_url": "", "metadata": None},
     )
 
 
@@ -185,16 +185,22 @@ async def test_create_observatory_http_error_returns_err(client):
 
 @pytest.mark.asyncio
 async def test_list_catalogs(client):
-    client._get = _ok([
-        {"catalog_id": "cat-001", "name": "Geography", "value": "GEO", "catalog_type": "spatial"},
-    ])
+    client._get = _ok({
+        "items": [
+            {"catalog_id": "cat-001", "name": "Geography", "value": "GEO", "catalog_type": "spatial"},
+        ],
+        "total": 1,
+        "skip": 0,
+        "limit": 50,
+    })
 
     result = await client.list_catalogs()
 
     assert result.is_ok
-    items = result.unwrap()
-    assert isinstance(items[0], DTO.CatalogSummaryDTO)
-    assert items[0].catalog_id == "cat-001"
+    page = result.unwrap()
+    assert page.total == 1
+    assert isinstance(page.items[0], DTO.CatalogSummaryDTO)
+    assert page.items[0].catalog_id == "cat-001"
 
 
 @pytest.mark.asyncio
@@ -384,6 +390,195 @@ async def test_get_task_stats(client):
     stats = result.unwrap()
     assert isinstance(stats, DTO.TasksStatsDTO)
     assert stats.pending == 2
+
+
+# ── API sync: catalogs ─────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_delete_catalog_handles_no_content(client):
+    client._delete_no_content = _ok(True)
+
+    result = await client.delete_catalog("cat-001")
+
+    assert result.is_ok and result.unwrap() is True
+    client._delete_no_content.assert_awaited_once_with("http://localhost:5000/api/v2/catalogs/cat-001")
+
+
+@pytest.mark.asyncio
+async def test_list_catalogs_sends_filters(client):
+    client._get = _ok({"items": [], "total": 0, "skip": 10, "limit": 5})
+
+    result = await client.list_catalogs(catalog_type=["SPATIAL", "TEMPORAL"], q="mex", skip=10, limit=5)
+
+    assert result.is_ok
+    client._get.assert_awaited_once_with(
+        "http://localhost:5000/api/v2/catalogs",
+        params={"skip": 10, "limit": 5, "catalog_type": ["SPATIAL", "TEMPORAL"], "q": "mex"},
+    )
+
+
+@pytest.mark.asyncio
+async def test_list_catalog_items_for_catalog(client):
+    client._get = _ok([_catalog_item()])
+
+    result = await client.list_catalog_items_for_catalog("cat-001")
+
+    assert result.is_ok
+    assert result.unwrap()[0].catalog_item_id == "itm-001"
+    client._get.assert_awaited_once_with("http://localhost:5000/api/v2/catalogs/cat-001/items")
+
+
+# ── API sync: observatories ────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_observatory_parses_status_and_view_count(client):
+    client._get = _ok({**_obs(), "is_disabled": True, "view_count": 7})
+
+    result = await client.get_observatory("obs-001")
+
+    assert result.is_ok
+    obs = result.unwrap()
+    assert obs.is_disabled is True
+    assert obs.view_count == 7
+
+
+@pytest.mark.asyncio
+async def test_set_observatory_status(client):
+    client._patch = _ok({**_obs(), "is_disabled": True})
+
+    result = await client.set_observatory_status("obs-001", DTO.ObservatoryStatusUpdateDTO(is_disabled=True))
+
+    assert result.is_ok and result.unwrap().is_disabled is True
+    client._patch.assert_awaited_once_with(
+        "http://localhost:5000/api/v2/observatories/obs-001/status", {"is_disabled": True}
+    )
+
+
+@pytest.mark.asyncio
+async def test_increment_observatory_view(client):
+    client._post = _ok({"observatory_id": "obs-001", "view_count": 3})
+
+    result = await client.increment_observatory_view("obs-001")
+
+    assert result.is_ok and result.unwrap().view_count == 3
+
+
+@pytest.mark.asyncio
+async def test_observatory_review_crud(client):
+    review = {
+        "review_id": "rev-001", "observatory_id": "obs-001", "user_id": "user-abc",
+        "content": "Useful", "rating": 4, "created_at": TS, "updated_at": TS,
+    }
+    client._get = _ok([review])
+    client._post = _ok(review)
+    client._put = _ok({**review, "rating": 5})
+    client._delete_no_content = _ok(True)
+
+    listed = await client.list_observatory_reviews("obs-001")
+    created = await client.create_observatory_review("obs-001", DTO.CreateReviewDTO(content="Useful", rating=4))
+    updated = await client.update_observatory_review("obs-001", "rev-001", {"rating": 5})
+    deleted = await client.delete_observatory_review("obs-001", "rev-001")
+
+    assert listed.unwrap()[0].review_id == "rev-001"
+    assert created.unwrap().rating == 4
+    assert updated.unwrap().rating == 5
+    assert deleted.unwrap() is True
+    client._delete_no_content.assert_awaited_once_with(
+        "http://localhost:5000/api/v2/observatories/obs-001/reviews/rev-001"
+    )
+
+
+def test_create_review_dto_rejects_out_of_range_rating():
+    with pytest.raises(ValueError):
+        DTO.CreateReviewDTO(content="x", rating=6)
+
+
+# ── API sync: products ─────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_filter_products_sends_metadata_as_query_params(client):
+    client._get = _ok([{**_product(), "metadata": {"extension": "csv"}}])
+
+    result = await client.filter_products({"extension": "csv"}, limit=20)
+
+    assert result.is_ok
+    assert result.unwrap()[0].metadata == {"extension": "csv"}
+    client._get.assert_awaited_once_with(
+        "http://localhost:5000/api/v2/products/filter", params={"extension": "csv", "limit": 20}
+    )
+
+
+@pytest.mark.asyncio
+async def test_filter_products_rejects_reserved_limit_key(client):
+    client._get = _ok([])
+
+    result = await client.filter_products({"limit": "5"})
+
+    assert result.is_err
+    client._get.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_tag_product_from_catalog(client):
+    client._post = _ok({"product_id": "prod-001", "catalog_id": "cat-001", "linked_items": 12})
+
+    result = await client.tag_product_from_catalog("prod-001", "cat-001")
+
+    assert result.is_ok and result.unwrap().linked_items == 12
+
+
+@pytest.mark.asyncio
+async def test_related_products(client):
+    client._get = _ok([_product("prod-002")])
+    client._post = _ok({"product_id": "prod-001", "related_product_id": "prod-002"})
+    client._delete_no_content = _ok(True)
+
+    listed = await client.list_related_products("prod-001")
+    added = await client.add_related_product("prod-001", DTO.RelateProductDTO(related_product_id="prod-002"))
+    removed = await client.remove_related_product("prod-001", "prod-002")
+
+    assert listed.unwrap()[0].product_id == "prod-002"
+    assert added.unwrap().related_product_id == "prod-002"
+    assert removed.unwrap() is True
+    client._post.assert_awaited_once_with(
+        "http://localhost:5000/api/v2/products/prod-001/related", {"related_product_id": "prod-002"}
+    )
+
+
+# ── API sync: search suggestions and tasks ─────────────────────
+
+
+@pytest.mark.asyncio
+async def test_product_search_suggestions_omits_unset_observatory(client):
+    client._get = _ok({"observatory_id": "", "suggestions": [{"query": "jub.v1.VS(MX)", "hit_count": 4}]})
+
+    result = await client.get_product_search_suggestions()
+
+    assert result.is_ok and result.unwrap().suggestions[0].hit_count == 4
+    client._get.assert_awaited_once_with(
+        "http://localhost:5000/api/v2/search/products/suggestions", params={"limit": 5}
+    )
+
+
+@pytest.mark.asyncio
+async def test_observatory_search_suggestions(client):
+    client._get = _ok({"suggestions": [{"query": "jub.v1.VS(MX)", "hit_count": 2}]})
+
+    result = await client.get_observatory_search_suggestions(limit=3)
+
+    assert result.is_ok and result.unwrap().suggestions[0].query == "jub.v1.VS(MX)"
+
+
+@pytest.mark.asyncio
+async def test_list_my_tasks_sends_skip(client):
+    client._get = _ok([])
+
+    await client.list_my_tasks(limit=10, skip=20)
+
+    client._get.assert_awaited_once_with("http://localhost:5000/api/v2/tasks", params={"limit": 10, "skip": 20})
 
 
 # ── JubClientBuilder ───────────────────────────────────────────

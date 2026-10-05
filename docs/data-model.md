@@ -112,10 +112,10 @@ Entities in v2 are **not embedded** — they are linked through explicit relatio
 
 | Relationship | Connects |
 |---|---|
-| `ObservatoryCatalogLink` | Observatory ↔ Catalog |
-| `CatalogItemLink` | Catalog ↔ Catalog Item |
-| `ProductObservatoryLink` | Product ↔ Observatory |
-| `ProductCatalogItemLink` | Product ↔ Catalog Item (tag) |
+| [`ObservatoryCatalogLink`](dto-reference.md#observatorycataloglink) | Observatory ↔ Catalog |
+| [`CatalogItemLink`](dto-reference.md#catalogitemlink) | Catalog ↔ Catalog Item |
+| [`ProductObservatoryLink`](dto-reference.md#productobservatorylink) | Product ↔ Observatory |
+| [`ProductCatalogItemLink`](dto-reference.md#productcatalogitemlink) | Product ↔ Catalog Item (tag) |
 
 !!! info "v2 vs v1"
     In v1 the Observatory embedded its catalogs and items directly. In v2 all relationships are expressed through link objects and managed via dedicated API endpoints. This decoupling allows items to belong to multiple catalogs and products to be tagged across multiple catalogs.
@@ -135,17 +135,17 @@ Observatory ──has_catalog──> Catalog ──has_item──> CatalogItem
      └──has_service──> Service
 ```
 
-`CatalogItem` nodes also form a tree internally: a `CatalogItem` can be linked as a child of another `CatalogItem` via `link_catalog_item_child()`. This is the `child_of` self-link shown above — it lives on `CatalogItem` itself and is independent of `tagged_with` (the Product → CatalogItem edge above it).
+[`CatalogItem`](dto-reference.md#catalogitem) nodes also form a tree internally: a [`CatalogItem`](dto-reference.md#catalogitem) can be linked as a child of another [`CatalogItem`](dto-reference.md#catalogitem) via `link_catalog_item_child()`. This is the `child_of` self-link shown above — it lives on [`CatalogItem`](dto-reference.md#catalogitem) itself and is independent of `tagged_with` (the Product → CatalogItem edge above it).
 
 ### Edge reference
 
 | Edge | Response object | Create | Delete |
 |---|---|---|---|
-| Observatory → Catalog | `ObservatoryCatalogLinkResponseDTO` | `link_catalog_to_observatory()` | `unlink_catalog_from_observatory()` |
-| Catalog → CatalogItem | `CatalogItemCatalogLinkResponseDTO` | `link_item_to_catalog()` | `unlink_item_from_catalog()` |
-| CatalogItem → CatalogItem (child) | `CatalogItemChildLinkResponseDTO` | `link_catalog_item_child()` | `unlink_catalog_item_child()` |
-| Product → Observatory | `ObservatoryProductLinkResponseDTO` | `link_product_to_observatory()` | `unlink_product_from_observatory()` |
-| Product → CatalogItem (tag) | `ProductTagsResponseDTO` | `add_product_tags()` | `remove_product_tag()` |
+| Observatory → Catalog | [`ObservatoryCatalogLinkResponseDTO`](dto-reference.md#observatorycataloglinkresponsedto) | `link_catalog_to_observatory()` | `unlink_catalog_from_observatory()` |
+| Catalog → CatalogItem | [`CatalogItemCatalogLinkResponseDTO`](dto-reference.md#catalogitemcataloglinkresponsedto) | `link_item_to_catalog()` | `unlink_item_from_catalog()` |
+| CatalogItem → CatalogItem (child) | [`CatalogItemChildLinkResponseDTO`](dto-reference.md#catalogitemchildlinkresponsedto) | `link_catalog_item_child()` | `unlink_catalog_item_child()` |
+| Product → Observatory | [`ObservatoryProductLinkResponseDTO`](dto-reference.md#observatoryproductlinkresponsedto) | `link_product_to_observatory()` | `unlink_product_from_observatory()` |
+| Product → CatalogItem (tag) | [`ProductTagsResponseDTO`](dto-reference.md#producttagsresponsedto) | `add_product_tags()` | `remove_product_tag()` |
 | Observatory → DataSource | *(source_id only)* | `link_datasource_to_observatory()` | `unlink_datasource_from_observatory()` |
 | Observatory → Service | *(service_id only)* | `link_service_to_observatory()` | `unlink_service_from_observatory()` |
 
@@ -159,7 +159,7 @@ These DTOs are returned by specific API methods and extend or compose the core e
 
 ### `ObservatoryDetailDTO`
 
-Returned by `get_observatory()`. Extends `ObservatoryXDTO` with aggregated relationship and rating data.
+Returned by `get_observatory()`. Extends [`ObservatoryXDTO`](dto-reference.md#observatoryxdto) with aggregated relationship and rating data.
 
 | Field | Type | Description |
 |---|---|---|
@@ -170,8 +170,8 @@ Returned by `get_observatory()`. Extends `ObservatoryXDTO` with aggregated relat
 | `metadata` | `dict` | Arbitrary key-value metadata |
 | `created_at` | `str` | ISO 8601 creation timestamp |
 | `updated_at` | `str` | ISO 8601 last-update timestamp |
-| `services` | `List[ServiceSnapshotDTO]` | Linked services |
-| `data_sources` | `List[DataSourceSnapshotDTO]` | Linked data sources |
+| `services` | <code>List[<a href="../dto-reference/#servicesnapshotdto">ServiceSnapshotDTO</a>]</code> | Linked services |
+| `data_sources` | <code>List[<a href="../dto-reference/#datasourcesnapshotdto">DataSourceSnapshotDTO</a>]</code> | Linked data sources |
 | `avg_rating` | `float` | Average user rating (0.0–5.0) |
 | `review_count` | `int` | Total number of reviews |
 
@@ -184,8 +184,8 @@ Returned per-observatory by `get_observatories_stats()`.
 | `observatory_id` | `str` | Unique identifier |
 | `avg_rating` | `float` | Average user rating (0.0–5.0) |
 | `review_count` | `int` | Total number of reviews |
-| `services` | `List[ServiceSnapshotDTO]` | Linked services |
-| `data_sources` | `List[DataSourceSnapshotDTO]` | Linked data sources |
+| `services` | <code>List[<a href="../dto-reference/#servicesnapshotdto">ServiceSnapshotDTO</a>]</code> | Linked services |
+| `data_sources` | <code>List[<a href="../dto-reference/#datasourcesnapshotdto">DataSourceSnapshotDTO</a>]</code> | Linked data sources |
 
 ### `ServiceSnapshotDTO`
 
@@ -240,7 +240,7 @@ The Nez Team integration introduces a compute layer on top of the JUB data model
 
 ### `ServiceProviderEnum`
 
-Identifies the origin of a service. Used in `ServiceCreateDTO.provider` and `ServiceIndexDTO.provider`.
+Identifies the origin of a service. Used in <code><a href="../dto-reference/#servicecreatedto">ServiceCreateDTO</a>.provider</code> and <code><a href="../dto-reference/#serviceindexdto">ServiceIndexDTO</a>.provider</code>.
 
 | Value | Meaning |
 |---|---|
@@ -255,7 +255,7 @@ Identifies the origin of a service. Used in `ServiceCreateDTO.provider` and `Ser
 
 A containerised unit of work. Defines the image and entrypoint that a Pattern will run.
 
-**`BuildingBlockCreateDTO`** — `POST /building-blocks`
+**[`BuildingBlockCreateDTO`](dto-reference.md#buildingblockcreatedto)** — `POST /building-blocks`
 
 | Field | Type | Description |
 |---|---|---|
@@ -264,7 +264,7 @@ A containerised unit of work. Defines the image and entrypoint that a Pattern wi
 | `image` | `str` | Docker image reference (e.g. `python:3.11-slim`) |
 | `description` | `str` | Optional description |
 
-**`BuildingBlockUpdateDTO`** — `PATCH /building-blocks/{id}`
+**[`BuildingBlockUpdateDTO`](dto-reference.md#buildingblockupdatedto)** — `PATCH /building-blocks/{id}`
 
 All fields optional.
 
@@ -275,7 +275,7 @@ All fields optional.
 | `image` | `str` | New Docker image |
 | `description` | `str` | New description |
 
-**`BuildingBlockDTO`** — response
+**[`BuildingBlockDTO`](dto-reference.md#buildingblockdto)** — response
 
 | Field | Type | Description |
 |---|---|---|
@@ -293,7 +293,7 @@ All fields optional.
 
 An execution strategy that wraps a Building Block with parallelism and load-balancing config.
 
-**`PatternCreateDTO`** — `POST /patterns`
+**[`PatternCreateDTO`](dto-reference.md#patterncreatedto)** — `POST /patterns`
 
 | Field | Type | Description |
 |---|---|---|
@@ -305,9 +305,9 @@ An execution strategy that wraps a Building Block with parallelism and load-bala
 | `loadbalancer` | `str` | Load-balancing strategy (default `round-robin`) |
 | `building_block_id` | `str` | Optional ID of an existing Building Block |
 
-**`PatternUpdateDTO`** — `PATCH /patterns/{id}` — all fields optional, same set as create.
+**[`PatternUpdateDTO`](dto-reference.md#patternupdatedto)** — `PATCH /patterns/{id}` — all fields optional, same set as create.
 
-**`PatternDTO`** — response — same fields as create plus `pattern_id`, `created_at`, `updated_at`.
+**[`PatternDTO`](dto-reference.md#patterndto)** — response — same fields as create plus `pattern_id`, `created_at`, `updated_at`.
 
 ---
 
@@ -315,7 +315,7 @@ An execution strategy that wraps a Building Block with parallelism and load-bala
 
 A processing unit: reads from a source, applies a transformation (Pattern), writes to a sink.
 
-**`StageCreateDTO`** — `POST /stages`
+**[`StageCreateDTO`](dto-reference.md#stagecreatedto)** — `POST /stages`
 
 | Field | Type | Description |
 |---|---|---|
@@ -325,9 +325,9 @@ A processing unit: reads from a source, applies a transformation (Pattern), writ
 | `endpoint` | `str` | HTTP or messaging endpoint exposed by this stage |
 | `transformation_id` | `str` | Optional ID of an existing Pattern to apply |
 
-**`StageUpdateDTO`** — `PATCH /stages/{id}` — all fields optional, same set as create.
+**[`StageUpdateDTO`](dto-reference.md#stageupdatedto)** — `PATCH /stages/{id}` — all fields optional, same set as create.
 
-**`StageDTO`** — response — same fields as create plus `stage_id`, `created_at`, `updated_at`.
+**[`StageDTO`](dto-reference.md#stagedto)** — response — same fields as create plus `stage_id`, `created_at`, `updated_at`.
 
 ---
 
@@ -335,18 +335,18 @@ A processing unit: reads from a source, applies a transformation (Pattern), writ
 
 An ordered list of Stages that forms a data pipeline.
 
-**`WorkflowCreateDTO`** — `POST /workflows`
+**[`WorkflowCreateDTO`](dto-reference.md#workflowcreatedto)** — `POST /workflows`
 
 | Field | Type | Description |
 |---|---|---|
 | `name` | `str` | Workflow name |
 | `stage_ids` | `List[str]` | Ordered list of Stage IDs |
 
-**`WorkflowUpdateDTO`** — `PATCH /workflows/{id}` — all fields optional.
+**[`WorkflowUpdateDTO`](dto-reference.md#workflowupdatedto)** — `PATCH /workflows/{id}` — all fields optional.
 
-**`WorkflowDTO`** — response — same fields as create plus `workflow_id`, `created_at`, `updated_at`.
+**[`WorkflowDTO`](dto-reference.md#workflowdto)** — response — same fields as create plus `workflow_id`, `created_at`, `updated_at`.
 
-**`WorkflowDeleteResponseDTO`** — `DELETE /workflows/{id}`
+**[`WorkflowDeleteResponseDTO`](dto-reference.md#workflowdeleteresponsedto)** — `DELETE /workflows/{id}`
 
 | Field | Type | Description |
 |---|---|---|
@@ -359,7 +359,7 @@ An ordered list of Stages that forms a data pipeline.
 
 A named, discoverable unit that exposes a Workflow. Searchable via the `SVC()` DSL operator.
 
-**`ServiceCreateDTO`** — `POST /services`
+**[`ServiceCreateDTO`](dto-reference.md#servicecreatedto)** — `POST /services`
 
 | Field | Type | Description |
 |---|---|---|
@@ -368,11 +368,11 @@ A named, discoverable unit that exposes a Workflow. Searchable via the `SVC()` D
 | `description` | `str` | Optional description |
 | `public` | `bool` | Whether discoverable via `SVC(*)` (default `False`) |
 | `workflow_id` | `str` | Optional ID of an existing Workflow to attach |
-| `provider` | `ServiceProviderEnum` | Provider classification (default `OTHER`) |
+| `provider` | [`ServiceProviderEnum`](dto-reference.md#serviceproviderenum) | Provider classification (default `OTHER`) |
 
-**`ServiceUpdateDTO`** — `PATCH /services/{id}` — all fields optional except IDs.
+**[`ServiceUpdateDTO`](dto-reference.md#serviceupdatedto)** — `PATCH /services/{id}` — all fields optional except IDs.
 
-**`ServiceDTO`** — response
+**[`ServiceDTO`](dto-reference.md#servicedto)** — response
 
 | Field | Type | Description |
 |---|---|---|
@@ -385,7 +385,7 @@ A named, discoverable unit that exposes a Workflow. Searchable via the `SVC()` D
 | `created_at` | `str` | ISO 8601 creation timestamp |
 | `updated_at` | `str` | ISO 8601 last-update timestamp |
 
-**`ServiceSimpleDTO`** — lightweight summary returned by observatory service lists.
+**[`ServiceSimpleDTO`](dto-reference.md#servicesimpledto)** — lightweight summary returned by observatory service lists.
 
 | Field | Type | Description |
 |---|---|---|
@@ -395,7 +395,7 @@ A named, discoverable unit that exposes a Workflow. Searchable via the `SVC()` D
 | `provider` | `str` | Provider name (optional) |
 | `public` | `bool` | Public visibility flag |
 
-**`ServiceDeleteResponseDTO`** — `DELETE /services/{id}`
+**[`ServiceDeleteResponseDTO`](dto-reference.md#servicedeleteresponsedto)** — `DELETE /services/{id}`
 
 | Field | Type | Description |
 |---|---|---|
@@ -409,7 +409,7 @@ A named, discoverable unit that exposes a Workflow. Searchable via the `SVC()` D
 
 `POST /services/index` creates the full **Service → Workflow → Stages → Patterns → Building Blocks** tree in one call. At every level you can either define entities inline or reference existing IDs.
 
-**`ServiceIndexDTO`** — request
+**[`ServiceIndexDTO`](dto-reference.md#serviceindexdto)** — request
 
 | Field | Type | Description |
 |---|---|---|
@@ -417,15 +417,15 @@ A named, discoverable unit that exposes a Workflow. Searchable via the `SVC()` D
 | `owner_id` | `str` | Owner user ID |
 | `description` | `str` | Optional description |
 | `public` | `bool` | Public visibility (default `False`) |
-| `provider` | `ServiceProviderEnum` | Provider classification (default `OTHER`) |
-| `workflow` | `WorkflowInlineDTO` | Inline workflow to create (mutually exclusive with `workflow_id`) |
+| `provider` | [`ServiceProviderEnum`](dto-reference.md#serviceproviderenum) | Provider classification (default `OTHER`) |
+| `workflow` | [`WorkflowInlineDTO`](dto-reference.md#workflowinlinedto) | Inline workflow to create (mutually exclusive with `workflow_id`) |
 | `workflow_id` | `str` | ID of an existing workflow to attach |
 
-**Inline DTOs** (nested inside `ServiceIndexDTO`):
+**Inline DTOs** (nested inside [`ServiceIndexDTO`](dto-reference.md#serviceindexdto)):
 
-`WorkflowInlineDTO` → `stages: List[StageInlineDTO]`  
-`StageInlineDTO` → `transformation: PatternInlineDTO` or `transformation_id`  
-`PatternInlineDTO` → `building_block: BuildingBlockInlineDTO` or `building_block_id`
+[`WorkflowInlineDTO`](dto-reference.md#workflowinlinedto) → <code>stages: List[<a href="../dto-reference/#stageinlinedto">StageInlineDTO</a>]</code>  
+[`StageInlineDTO`](dto-reference.md#stageinlinedto) → <code>transformation: <a href="../dto-reference/#patterninlinedto">PatternInlineDTO</a></code> or `transformation_id`  
+[`PatternInlineDTO`](dto-reference.md#patterninlinedto) → <code>building_block: <a href="../dto-reference/#buildingblockinlinedto">BuildingBlockInlineDTO</a></code> or `building_block_id`
 
 ```python
 result = await client.index_service(DTO.ServiceIndexDTO(
@@ -457,7 +457,7 @@ result = await client.index_service(DTO.ServiceIndexDTO(
 ))
 ```
 
-**`ServiceIndexResponseDTO`** — response
+**[`ServiceIndexResponseDTO`](dto-reference.md#serviceindexresponsedto)** — response
 
 | Field | Type | Description |
 |---|---|---|
