@@ -143,7 +143,8 @@ Every client method returns `Result[T, Exception]` from the [`option`](https://p
 result = await client.list_catalogs()
 
 if result.is_ok:
-    catalogs = result.unwrap()        # List[CatalogSummaryDTO]
+    page = result.unwrap()            # PageDTO[CatalogSummaryDTO]
+    catalogs = page.items
 else:
     error = result.unwrap_err()       # Exception
     print("Error:", error)
@@ -198,10 +199,11 @@ All methods are `async`. The base URL is `{api_url}/api/v2`.
 | `create_catalog_from_json(...)` | `POST /catalogs` | Create a catalog from a file, JSON string, or dict |
 | `create_bulk_catalogs_from_json(...)` | `POST /catalogs/bulk` | Create multiple catalogs at once |
 | `create_bulk_catalogs_and_link_from_json(observatory_id, ...)` | `POST /catalogs/bulk/{observatory_id}/link` | Create multiple catalogs and link them to an observatory |
-| `list_catalogs()` | `GET /catalogs` | List all catalogs (summary) |
+| `list_catalogs(catalog_type, q, skip, limit)` | `GET /catalogs` | List catalogs (paginated `PageDTO`, filterable by type and name/value) |
 | `get_catalog(catalog_id)` | `GET /catalogs/{id}` | Get a full catalog with items and aliases |
 | `update_catalog(catalog_id, dto)` | `PUT /catalogs/{id}` | Update mutable fields on a catalog |
 | `delete_catalog(catalog_id)` | `DELETE /catalogs/{id}` | Delete a catalog and its relationships |
+| `list_catalog_items_for_catalog(catalog_id)` | `GET /catalogs/{id}/items` | List every item in a catalog |
 
 ### Catalog items — `/catalog-items`
 
@@ -248,6 +250,12 @@ All methods are `async`. The base URL is `{api_url}/api/v2`.
 | `link_service_to_observatory(id, svc_id)` | `POST /observatories/{id}/services` | Link an existing service |
 | `list_observatory_services(id)` | `GET /observatories/{id}/services` | List linked services |
 | `unlink_service_from_observatory(id, svc_id)` | `DELETE /observatories/{id}/services/{svc_id}` | Unlink a service |
+| `set_observatory_status(id, dto)` | `PATCH /observatories/{id}/status` | Enable or disable an observatory |
+| `increment_observatory_view(id)` | `POST /observatories/{id}/view` | Increment the view counter |
+| `list_observatory_reviews(id)` | `GET /observatories/{id}/reviews` | List reviews |
+| `create_observatory_review(id, dto)` | `POST /observatories/{id}/reviews` | Add a review (rating 1-5) |
+| `update_observatory_review(id, review_id, dto)` | `PUT /observatories/{id}/reviews/{review_id}` | Update a review |
+| `delete_observatory_review(id, review_id)` | `DELETE /observatories/{id}/reviews/{review_id}` | Delete a review |
 
 ### Products — `/products`
 
@@ -255,6 +263,7 @@ All methods are `async`. The base URL is `{api_url}/api/v2`.
 |--------|----------|-------------|
 | `create_product(dto)` | `POST /products` | Create a product linked to an observatory |
 | `list_products(limit)` | `GET /products` | List products (paginated) |
+| `filter_products(metadata, limit)` | `GET /products/filter` | List products whose metadata matches all given key-value pairs |
 | `get_product(id)` | `GET /products/{id}` | Get a single product |
 | `update_product(id, dto)` | `PUT /products/{id}` | Update mutable fields |
 | `delete_product(id)` | `DELETE /products/{id}` | Delete product and relationships |
@@ -262,8 +271,12 @@ All methods are `async`. The base URL is `{api_url}/api/v2`.
 | `add_product_tags(id, dto)` | `POST /products/{id}/tags` | Associate catalog items with a product |
 | `remove_product_tag(id, catalog_item_id)` | `DELETE /products/{id}/tags/{cid}` | Remove a tag |
 | `get_product_tag_details(id)` | `GET /products/{id}/tags/details` | Get full catalog items for each tag |
+| `tag_product_from_catalog(id, catalog_id)` | `POST /products/{id}/tags/catalog/{catalog_id}` | Tag a product with every item in a catalog |
+| `list_related_products(id)` | `GET /products/{id}/related` | List related products |
+| `add_related_product(id, dto)` | `POST /products/{id}/related` | Relate another product |
+| `remove_related_product(id, related_id)` | `DELETE /products/{id}/related/{related_id}` | Remove a relation |
 | `upload_product(id, file_path)` | `POST /products/{id}/upload` | Queue a file for background ingestion |
-| `download_product(id)` | `GET /products/{id}/download` | Download the product file as bytes |
+| `download_product(id, job_id)` | `GET /products/{id}/download` | Download the product file as bytes, optionally from a specific upload job |
 
 ### Data sources — `/datasources`
 
@@ -288,13 +301,15 @@ All methods are `async`. The base URL is `{api_url}/api/v2`.
 | `generate_plot(dto)` | `POST /search/plot` | DSL aggregation returning ECharts JSON |
 | `search_observatories(dto)` | `POST /search/observatories` | DSL search scoped to observatories |
 | `search_services(dto)` | `POST /search/services` | DSL search scoped to services |
+| `get_observatory_search_suggestions(limit)` | `GET /search/observatories/suggestions` | Suggested observatory queries with hit counts |
+| `get_product_search_suggestions(observatory_id, limit)` | `GET /search/products/suggestions` | Suggested product queries with hit counts |
 
 ### Tasks — `/tasks`
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `get_task_stats()` | `GET /tasks/stats` | Task counts by status |
-| `list_my_tasks(limit)` | `GET /tasks` | Recent tasks for the authenticated user |
+| `list_my_tasks(limit, skip)` | `GET /tasks` | Recent tasks for the authenticated user |
 | `get_task(task_id)` | `GET /tasks/{id}` | Details of a single task |
 | `complete_task(task_id, dto)` | `POST /tasks/{id}/complete` | Mark a task done (enables its observatory) |
 | `retry_task(task_id)` | `PUT /tasks/{id}/retry` | Retry a failed task |

@@ -17,6 +17,7 @@ nav = [
     {"Getting Started" = "getting-started.md"},
     {"Data Model" = "data-model.md"},
     {"API Reference" = "api-reference.md"},
+    {"DTO Reference" = "dto-reference.md"},
     {"Examples" = "usage_examples.md"},
 ]
 

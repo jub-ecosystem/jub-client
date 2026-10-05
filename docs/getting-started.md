@@ -53,8 +53,8 @@ Every method returns `Result[T, Exception]`. Check `.is_ok` before unwrapping:
 result = await client.list_catalogs()
 
 if result.is_ok:
-    catalogs = result.unwrap()        # List[CatalogSummaryDTO]
-    for c in catalogs:
+    page = result.unwrap()            # PageDTO[CatalogSummaryDTO]
+    for c in page.items:
         print(c.catalog_id, c.name)
 else:
     error = result.unwrap_err()       # Exception

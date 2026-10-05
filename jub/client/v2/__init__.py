@@ -55,6 +55,15 @@ class _UploadJob:
 
 @dataclass
 class FailedUploadEntry:
+    """
+    An upload job that exhausted all retries without succeeding.
+
+    Attributes:
+        product_id: ID of the product whose upload failed.
+        attempts: Total number of upload attempts made.
+        last_error: Error message from the last failed attempt.
+    """
+
     product_id: str
     attempts: int
     last_error: str
@@ -62,6 +71,15 @@ class FailedUploadEntry:
 
 @dataclass
 class BulkUploadResult:
+    """
+    Result of wait_uploads() and bulk_upload_products().
+
+    Attributes:
+        succeeded: Upload responses for every job that succeeded.
+        failed: Jobs that failed permanently after all retries.
+        skipped: Product IDs skipped because the upload registry already recorded them as succeeded.
+    """
+
     succeeded: List[DTO.ProductUploadResponseDTO] = field(default_factory=list)
     failed: List[FailedUploadEntry] = field(default_factory=list)
     skipped: List[str] = field(default_factory=list)
@@ -624,29 +642,46 @@ class JubClient:
         return self._validated(DTO.CatalogSummaryDTO, await self._put(f"{self._catalogs_url}/{catalog_id}", payload.model_dump()))
 
 
-    async def delete_catalog(self, catalog_id: str) -> Result[DTO.CatalogSummaryDTO, Exception]:
+    async def delete_catalog(self, catalog_id: str) -> Result[bool, Exception]:
         """
         DELETE /catalogs/{catalog_id}
 
-        Deletes a catalog and all its linked relationships.
+        Deletes a catalog and all its linked relationships (204 No Content).
 
         Args:
             catalog_id: Unique identifier of the catalog to delete.
         Returns:
-            Ok(CatalogSummaryDTO) on success, Err(exception) on failure.
+            Ok(True) on success, Err(exception) on failure.
         """
-        return self._validated(DTO.CatalogSummaryDTO, await self._delete(f"{self._catalogs_url}/{catalog_id}"))
+        return await self._delete_no_content(f"{self._catalogs_url}/{catalog_id}")
 
-    async def list_catalogs(self) -> Result[List[DTO.CatalogSummaryDTO], Exception]:
+    async def list_catalogs(
+        self,
+        catalog_type: Optional[List[str]] = None,
+        q: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 50,
+    ) -> Result[DTO.PageDTO[DTO.CatalogSummaryDTO], Exception]:
         """
         GET /catalogs
 
-        Returns a lightweight list of all catalogs.
+        Returns a paginated, lightweight list of catalogs.
+
+        Args:
+            catalog_type: Filter by one or more catalog types (SPATIAL, TEMPORAL, INTEREST, OBSERVABLE, REFERENCE).
+            q: Case-insensitive search on catalog name or value.
+            skip: Number of catalogs to skip.
+            limit: Maximum number of catalogs to return (1-500).
 
         Returns:
-            Ok(List[CatalogSummaryDTO]) on success, Err(exception) on failure.
+            Ok(PageDTO[CatalogSummaryDTO]) on success, Err(exception) on failure.
         """
-        return self._validated_list(DTO.CatalogSummaryDTO, await self._get(self._catalogs_url))
+        params: Dict[str, Any] = {"skip": skip, "limit": limit}
+        if catalog_type:
+            params["catalog_type"] = catalog_type
+        if q is not None:
+            params["q"] = q
+        return self._validated(DTO.PageDTO[DTO.CatalogSummaryDTO], await self._get(self._catalogs_url, params=params))
 
     async def get_catalog(self, catalog_id: str) -> Result[DTO.CatalogResponseDTO, Exception]:
         """
@@ -661,6 +696,10 @@ class JubClient:
             Ok(CatalogResponseDTO) on success, Err(exception) on failure.
         """
         return self._validated(DTO.CatalogResponseDTO, await self._get(f"{self._catalogs_url}/{catalog_id}"))
+
+    async def list_catalog_items_for_catalog(self, catalog_id: str) -> Result[List[DTO.CatalogItemXResponseDTO], Exception]:
+        """GET /catalogs/{catalog_id}/items — Returns every item in a catalog."""
+        return self._validated_list(DTO.CatalogItemXResponseDTO, await self._get(f"{self._catalogs_url}/{catalog_id}/items"))
 
     # ── Catalog items  /catalog-items ─────────────────────────
 
@@ -1241,6 +1280,47 @@ class JubClient:
             DTO.ServiceSimpleDTO,
             await self._get(f"{self._observatories_url}/{observatory_id}/services"),
         )
+
+    async def set_observatory_status(
+        self,
+        observatory_id: str,
+        dto: Union[DTO.ObservatoryStatusUpdateDTO, Dict],
+    ) -> Result[DTO.ObservatoryXDTO, Exception]:
+        """PATCH /observatories/{id}/status — Enables or disables an observatory."""
+        payload = dto.model_dump() if isinstance(dto, DTO.ObservatoryStatusUpdateDTO) else dto
+        return self._validated(DTO.ObservatoryXDTO, await self._patch(f"{self._observatories_url}/{observatory_id}/status", payload))
+
+    async def increment_observatory_view(self, observatory_id: str) -> Result[DTO.ObservatoryViewResponseDTO, Exception]:
+        """POST /observatories/{id}/view — Increments the view counter and returns the new count."""
+        return self._validated(DTO.ObservatoryViewResponseDTO, await self._post(f"{self._observatories_url}/{observatory_id}/view", {}))
+
+    async def list_observatory_reviews(self, observatory_id: str) -> Result[List[DTO.ReviewDTO], Exception]:
+        """GET /observatories/{id}/reviews — Lists all reviews of an observatory."""
+        return self._validated_list(DTO.ReviewDTO, await self._get(f"{self._observatories_url}/{observatory_id}/reviews"))
+
+    async def create_observatory_review(
+        self,
+        observatory_id: str,
+        dto: Union[DTO.CreateReviewDTO, Dict],
+    ) -> Result[DTO.ReviewDTO, Exception]:
+        """POST /observatories/{id}/reviews — Adds a review (rating 1-5) to an observatory."""
+        payload = dto.model_dump() if isinstance(dto, DTO.CreateReviewDTO) else dto
+        return self._validated(DTO.ReviewDTO, await self._post(f"{self._observatories_url}/{observatory_id}/reviews", payload))
+
+    async def update_observatory_review(
+        self,
+        observatory_id: str,
+        review_id: str,
+        dto: Union[DTO.UpdateReviewDTO, Dict],
+    ) -> Result[DTO.ReviewDTO, Exception]:
+        """PUT /observatories/{id}/reviews/{review_id} — Updates the content or rating of a review."""
+        payload = dto.model_dump() if isinstance(dto, DTO.UpdateReviewDTO) else dto
+        return self._validated(DTO.ReviewDTO, await self._put(f"{self._observatories_url}/{observatory_id}/reviews/{review_id}", payload))
+
+    async def delete_observatory_review(self, observatory_id: str, review_id: str) -> Result[bool, Exception]:
+        """DELETE /observatories/{id}/reviews/{review_id} — Deletes a review (204 No Content)."""
+        return await self._delete_no_content(f"{self._observatories_url}/{observatory_id}/reviews/{review_id}")
+
     # ── Products  /products ────────────────────────────────────
 
     async def create_product(
@@ -1254,6 +1334,23 @@ class JubClient:
     async def list_products(self, limit: int = 100) -> Result[List[DTO.ProductSimpleDTO], Exception]:
         """GET /products — Returns a paginated list of products."""
         return self._validated_list(DTO.ProductSimpleDTO, await self._get(self._products_url, params={"limit": limit}))
+
+    async def filter_products(self, metadata: Dict[str, str], limit: int = 100) -> Result[List[DTO.ProductSimpleDTO], Exception]:
+        """
+        GET /products/filter
+
+        Returns products whose metadata matches all of the given key-value pairs.
+
+        Args:
+            metadata: Metadata key-value pairs to match exactly (combined with AND). The key "limit" is reserved.
+            limit: Maximum number of results to return (1-500).
+
+        Returns:
+            Ok(List[ProductSimpleDTO]) on success, Err(exception) on failure.
+        """
+        if "limit" in metadata:
+            return Err(ValueError("'limit' is reserved and cannot be used as a metadata filter key"))
+        return self._validated_list(DTO.ProductSimpleDTO, await self._get(f"{self._products_url}/filter", params={**metadata, "limit": limit}))
 
     async def get_product(self, product_id: str) -> Result[DTO.ProductSimpleDTO, Exception]:
         """GET /products/{id} — Returns a single product."""
@@ -1324,6 +1421,27 @@ class JubClient:
         return await self._delete_no_content(
             f"{self._products_url}/{product_id}/tags/{catalog_item_id}"
         )
+
+    async def tag_product_from_catalog(self, product_id: str, catalog_id: str) -> Result[DTO.BulkTagFromCatalogResponseDTO, Exception]:
+        """POST /products/{id}/tags/catalog/{catalog_id} — Tags a product with every item currently in a catalog."""
+        return self._validated(DTO.BulkTagFromCatalogResponseDTO, await self._post(f"{self._products_url}/{product_id}/tags/catalog/{catalog_id}", {}))
+
+    async def list_related_products(self, product_id: str) -> Result[List[DTO.ProductSimpleDTO], Exception]:
+        """GET /products/{id}/related — Returns products related to this one (relations are bidirectional)."""
+        return self._validated_list(DTO.ProductSimpleDTO, await self._get(f"{self._products_url}/{product_id}/related"))
+
+    async def add_related_product(
+        self,
+        product_id: str,
+        dto: Union[DTO.RelateProductDTO, Dict],
+    ) -> Result[DTO.RelatedProductLinkResponseDTO, Exception]:
+        """POST /products/{id}/related — Relates another product to this one."""
+        payload = dto.model_dump() if isinstance(dto, DTO.RelateProductDTO) else dto
+        return self._validated(DTO.RelatedProductLinkResponseDTO, await self._post(f"{self._products_url}/{product_id}/related", payload))
+
+    async def remove_related_product(self, product_id: str, related_product_id: str) -> Result[bool, Exception]:
+        """DELETE /products/{id}/related/{related_product_id} — Removes a product relation (204 No Content)."""
+        return await self._delete_no_content(f"{self._products_url}/{product_id}/related/{related_product_id}")
 
     async def upload_product(self, product_id: str, file_path: Union[str, bytes]) -> Result[DTO.ProductUploadResponseDTO, Exception]:
         """
@@ -1581,11 +1699,12 @@ class JubClient:
         """GET /products/{product_id}/tags/details — Returns full catalog items for each tag."""
         return self._validated_list(DTO.CatalogItemXResponseDTO, await self._get(f"{self._products_url}/{product_id}/tags/details"))
 
-    async def download_product(self, product_id: str) -> Result[bytes, Exception]:
-        """GET /products/{product_id}/download — Downloads the product file as raw bytes."""
+    async def download_product(self, product_id: str, job_id: Optional[str] = None) -> Result[bytes, Exception]:
+        """GET /products/{product_id}/download — Downloads the product file as raw bytes, optionally from a specific upload job."""
+        params = {"job_id": job_id} if job_id is not None else None
         try:
             async with self._client() as c:
-                r = await c.get(f"{self._products_url}/{product_id}/download")
+                r = await c.get(f"{self._products_url}/{product_id}/download", params=params)
                 r.raise_for_status()
                 return Ok(r.content)
         except Exception as e:
@@ -1675,6 +1794,17 @@ class JubClient:
         """
         return self._validated_list(DTO.ServiceDTO, await self._post(f"{self._search_url}/services", dto.model_dump()))
 
+    async def get_observatory_search_suggestions(self, limit: int = 5) -> Result[DTO.ObservatorySearchSuggestionsResponseDTO, Exception]:
+        """GET /search/observatories/suggestions — Returns suggested observatory queries with hit counts."""
+        return self._validated(DTO.ObservatorySearchSuggestionsResponseDTO, await self._get(f"{self._search_url}/observatories/suggestions", params={"limit": limit}))
+
+    async def get_product_search_suggestions(self, observatory_id: Optional[str] = None, limit: int = 5) -> Result[DTO.SearchSuggestionsResponseDTO, Exception]:
+        """GET /search/products/suggestions — Returns suggested product queries with hit counts, optionally scoped to an observatory."""
+        params: Dict[str, Any] = {"limit": limit}
+        if observatory_id is not None:
+            params["observatory_id"] = observatory_id
+        return self._validated(DTO.SearchSuggestionsResponseDTO, await self._get(f"{self._search_url}/products/suggestions", params=params))
+
     # ── Tasks  /tasks ──────────────────────────────────────────
 
     async def get_task_stats(self) -> Result[DTO.TasksStatsDTO, Exception]:
@@ -1682,10 +1812,10 @@ class JubClient:
         return self._validated(DTO.TasksStatsDTO, await self._get(f"{self._tasks_url}/stats"))
 
     async def list_my_tasks(
-        self, limit: int = 50
+        self, limit: int = 50, skip: int = 0
     ) -> Result[List[DTO.TaskXDTO], Exception]:
         """GET /tasks — Returns recent background tasks for the authenticated user."""
-        return self._validated_list(DTO.TaskXDTO, await self._get(self._tasks_url, params={"limit": limit}))
+        return self._validated_list(DTO.TaskXDTO, await self._get(self._tasks_url, params={"limit": limit, "skip": skip}))
 
     async def get_task(self, task_id: str) -> Result[DTO.TaskXDTO, Exception]:
         """GET /tasks/{id} — Returns details of a single background task."""

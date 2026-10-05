@@ -170,9 +170,9 @@ async def test_create_catalogs_bulk_and_link(client:JubClient):
 async def test_list_catalogs(client: JubClient):
     result = await client.list_catalogs()
     assert result.is_ok, f"list_catalogs failed: {result.unwrap_err()}"
-    items = result.unwrap()
-    assert isinstance(items, list)
-    assert all(isinstance(c, DTO.CatalogSummaryDTO) for c in items)
+    page = result.unwrap()
+    assert isinstance(page.items, list)
+    assert all(isinstance(c, DTO.CatalogSummaryDTO) for c in page.items)
 
 
 # ── Products ───────────────────────────────────────────────────
