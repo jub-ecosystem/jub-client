@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "jub"
-version = "0.1.0a5"
+version = "0.1.0a6"
 description = ""
 authors = ["Ignacio Castillo <jcastillo@mictlanx.com>"]
 license = "GPL-3.0-or-later"
